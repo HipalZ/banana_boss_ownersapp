@@ -38,7 +38,7 @@ export function LoginScreen() {
   const { login, loginAdmin, rememberedPhone, rememberedPassword } = useAuth();
   // Login already sets selectedBusiness inside useAuth.login — no need to call it here.
 
-  const [mode, setMode] = useState<LoginMode>('email');
+  const [mode, setMode] = useState<LoginMode>('mobile');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState(rememberedPhone || '');
   const [password, setPassword] = useState(rememberedPassword || '');
