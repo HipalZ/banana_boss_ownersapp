@@ -69,8 +69,8 @@ export function NpcScreen() {
             }}
             activeOpacity={0.8}
           >
-            <Icon name="plus" size={14} color={colors.text.white} />
-            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: colors.text.white }}>Add NPC</Text>
+            <Icon name="plus" size={14} color={colors.onPrimary} />
+            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: colors.onPrimary }}>Add NPC</Text>
           </TouchableOpacity>
         }
       />
@@ -87,7 +87,11 @@ export function NpcScreen() {
       <FlatList
         data={data || []}
         keyExtractor={(item) => item._id}
-        renderItem={({ item }) => (
+        renderItem={({ item }) => {
+          const displayName = item.userName || item.name || 'Unknown User';
+          const displayPhone = item.userPhone || item.phone || 'No Phone';
+
+          return (
           <AppCard style={{ marginBottom: 10, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface.card }}>
             <View style={{
               width: 44,
@@ -102,9 +106,9 @@ export function NpcScreen() {
               <Icon name="user-check" size={20} color={colors.tint.rose.fg} />
             </View>
             <View style={{ flex: 1, marginLeft: 14 }}>
-              <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: colors.text.base }}>{item.name}</Text>
+              <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: colors.text.base }}>{displayName}</Text>
               <Text style={{ fontSize: 12, fontFamily: fonts.medium, color: colors.text.muted, marginTop: 3 }}>
-                {item.phone || 'No Phone'}
+                {displayPhone}
               </Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
@@ -116,7 +120,8 @@ export function NpcScreen() {
               </Text>
             </View>
           </AppCard>
-        )}
+          );
+        }}
         ListEmptyComponent={<EmptyState title="No NPC Registry Profiles" subtitle="Add Complimentary accounts for special guests." />}
         contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}

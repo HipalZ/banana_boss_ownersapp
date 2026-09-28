@@ -71,8 +71,8 @@ export function DuesScreen() {
             }}
             activeOpacity={0.8}
           >
-            <Icon name="plus" size={14} color={colors.text.white} />
-            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: colors.text.white }}>Add User</Text>
+            <Icon name="plus" size={14} color={colors.onPrimary} />
+            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: colors.onPrimary }}>Add User</Text>
           </TouchableOpacity>
         }
       />
@@ -89,7 +89,11 @@ export function DuesScreen() {
       <FlatList
         data={data || []}
         keyExtractor={(item) => item._id}
-        renderItem={({ item }) => (
+        renderItem={({ item }) => {
+          const displayName = item.userName || item.name || 'Unknown User';
+          const displayPhone = item.userPhone || item.phone || 'No Phone';
+
+          return (
           <AppCard style={{ marginBottom: 10, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface.card }}>
             <View style={{
               width: 44,
@@ -102,12 +106,12 @@ export function DuesScreen() {
               borderColor: colors.surface.border,
             }}>
               <Text style={{ fontSize: 14, fontFamily: fonts.extrabold, color: colors.text.secondary }}>
-                {item.name?.substring(0, 2)?.toUpperCase()}
+                {displayName.substring(0, 2).toUpperCase()}
               </Text>
             </View>
             <View style={{ flex: 1, marginLeft: 14 }}>
-              <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: colors.text.base }}>{item.name}</Text>
-              <Text style={{ fontSize: 12, fontFamily: fonts.medium, color: colors.text.muted, marginTop: 3 }}>{item.phone || 'No Phone'}</Text>
+              <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: colors.text.base }}>{displayName}</Text>
+              <Text style={{ fontSize: 12, fontFamily: fonts.medium, color: colors.text.muted, marginTop: 3 }}>{displayPhone}</Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
               <Text style={{ fontSize: 16, fontFamily: fonts.extrabold, color: item.currentDuesAmount > 0 ? colors.danger : colors.success }}>
@@ -128,7 +132,8 @@ export function DuesScreen() {
               </View>
             </View>
           </AppCard>
-        )}
+          );
+        }}
         ListEmptyComponent={<EmptyState title="No Dues Accounts" subtitle="Add customer profiles to manage outstanding dues." />}
         contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}

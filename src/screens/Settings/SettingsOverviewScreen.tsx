@@ -79,7 +79,7 @@ export function SettingsOverviewScreen() {
           style={{
             fontFamily: fonts.bold,
             fontSize: 20,
-            color: colors.text.white,
+            color: colors.onPrimary,
           }}
         >
           {me?.name || me?.nickName || "Staff"}
