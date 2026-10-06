@@ -197,7 +197,7 @@ export function SalesDashboardScreen() {
             }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                 <Text style={{ fontFamily: fonts.bold, fontSize: 11, color: colors.text.onInkMuted, letterSpacing: 1.2, textTransform: 'uppercase' }}>
-                  Net Sales
+                  Total Net Sales
                 </Text>
                 
                 {/* Live Pulse Indicator */}
