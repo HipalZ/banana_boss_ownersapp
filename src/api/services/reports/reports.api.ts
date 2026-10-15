@@ -138,6 +138,7 @@ export interface ReportResponse<T = any> {
   data: T[];
   pagination?: ReportPagination;
   totals?: Record<string, number | string>;
+  summary?: Record<string, any>;
 }
 
 // The backend wraps every response as:
@@ -195,6 +196,7 @@ function extractField<T>(raw: any[], field: string): ReportResponse<T> {
     data: data.map(normalizeReportRow) as T[],
     pagination: first.pagination,
     totals: first.totals,
+    summary: first.summary,
   };
 }
 
