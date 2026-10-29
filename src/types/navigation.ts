@@ -35,6 +35,10 @@ export type SettingsStackParamList = {
   OutletSelector: undefined;
 };
 
+export type WhatsappStackParamList = {
+  WhatsappCustomers: undefined;
+};
+
 export type OutletAdminStackParamList = {
   AllOutlets: undefined;
 };
@@ -42,6 +46,7 @@ export type OutletAdminStackParamList = {
 export type AppTabsParamList = {
   ReportsTab: undefined;
   BillingTab: undefined;
+  WhatsappTab: undefined;
   SettingsTab: undefined;
 };
 

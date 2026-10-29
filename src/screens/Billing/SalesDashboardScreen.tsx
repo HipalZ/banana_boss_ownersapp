@@ -13,9 +13,11 @@ import { colors, fonts, radii, shadows } from '@/theme';
 import { getTodayRange, getBusinessDayRange } from '@/utils/date';
 import { BarChart } from 'react-native-chart-kit';
 import Icon from 'react-native-vector-icons/Feather';
+import { useIsFocused } from '@react-navigation/native';
 
 export function SalesDashboardScreen() {
   const { outletId, currentOutlet } = useOutlet();
+  const isScreenFocused = useIsFocused();
   const dateRange = useAppStore((s) => s.reportsDateRange);
   const setDateRange = useAppStore((s) => s.setReportsDateRange);
 
@@ -30,7 +32,6 @@ export function SalesDashboardScreen() {
   const billingEnd   = outletDetail?.billingEndTime   ?? 0;
 
   const { format } = useCurrency();
-  const handleRefresh = useCallback(() => { refetch(); }, [refetch]);
 
   // Determine if selected date range is today
   const isToday = useMemo(() => {
@@ -89,8 +90,17 @@ export function SalesDashboardScreen() {
   // Running tables → KOT drill-down (mirrors banana_boss web). The dashboard's
   // running-tables only carry name+amount, so we fetch the dedicated endpoint
   // to get tableId, then tap a table to see its live KOTs.
-  const { data: liveRunning } = useRunningTablesQuery(outletId);
+  const {
+    data: liveRunning,
+    isFetching: isFetchingRunning,
+    refetch: refetchRunning,
+  } = useRunningTablesQuery(outletId, isScreenFocused);
   const liveTables = liveRunning?.tables ?? [];
+
+  const handleRefresh = useCallback(async () => {
+    await Promise.all([refetch(), refetchRunning()]);
+  }, [refetch, refetchRunning]);
+
   const [kotSheetOpen, setKotSheetOpen] = useState(false);
   const [kotTable, setKotTable] = useState<
     { outletId: string; outletName: string; tableId: string; tableName: string } | null
@@ -563,7 +573,11 @@ export function SalesDashboardScreen() {
           )}
 
           {/* Running Tables Grid — tap a table to see its live KOTs */}
-          {liveTables.length > 0 && (
+          {isFetchingRunning ? (
+            <View style={{ marginTop: 8, marginBottom: 20 }}>
+              <LoadingSkeleton type="card-grid" count={6} />
+            </View>
+          ) : liveTables.length > 0 && (
             <MotiView
               from={{ opacity: 0, translateY: 12 }}
               animate={{ opacity: 1, translateY: 0 }}
@@ -571,9 +585,7 @@ export function SalesDashboardScreen() {
               style={{ marginTop: 8, marginBottom: 20 }}
             >
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <Text style={[s.sectionLabel, { marginTop: 0, marginBottom: 0 }]}>
-                  Active Tables ({liveTables.length})
-                </Text>
+                <Text style={[s.sectionLabel, { marginTop: 0, marginBottom: 0 }]}>Active Tables ({liveTables.length})</Text>
                 <Text style={{ fontFamily: fonts.bold, fontSize: 13, fontWeight: '800', color: colors.warning }}>
                   Total: {format(liveRunning?.totalActiveTableValue || 0)}
                 </Text>

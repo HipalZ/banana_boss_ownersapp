@@ -6,6 +6,7 @@ import type { AppTabsParamList } from '@/types/navigation';
 import { ReportsStack } from './ReportsStack';
 import { BillingStack } from './BillingStack';
 import { SettingsStack } from './SettingsStack';
+import { WhatsappStack } from './WhatsappStack';
 import { colors, fonts, radii, shadows } from '@/theme';
 
 const Tab = createBottomTabNavigator<AppTabsParamList>();
@@ -21,6 +22,7 @@ export function AppTabs() {
           switch (route.name) {
             case 'ReportsTab':   iconName = 'bar-chart-2'; break;
             case 'BillingTab':   iconName = 'credit-card'; break;
+            case 'WhatsappTab':  iconName = 'message-circle'; break;
             case 'SettingsTab':  iconName = 'user'; break;
             default:             iconName = 'circle';
           }
@@ -52,6 +54,7 @@ export function AppTabs() {
     >
       <Tab.Screen name="ReportsTab"  component={ReportsStack}  options={{ tabBarLabel: 'Reports' }} />
       <Tab.Screen name="BillingTab"  component={BillingStack}  options={{ tabBarLabel: 'Billing' }} />
+      <Tab.Screen name="WhatsappTab" component={WhatsappStack} options={{ tabBarLabel: 'WhatsApp' }} />
       <Tab.Screen name="SettingsTab" component={SettingsStack} options={{ tabBarLabel: 'Account' }} />
     </Tab.Navigator>
   );

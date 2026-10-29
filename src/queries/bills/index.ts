@@ -56,7 +56,6 @@ export function useRunningTablesQuery(outletId: string | null, enabled = true) {
     queryKey: queryKeys.bills.runningTables(outletId),
     queryFn: () => billsApi.getRunningTables(outletId!),
     enabled: !!outletId && enabled,
-    staleTime: 30_000,
   });
 }
 
