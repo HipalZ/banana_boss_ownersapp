@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   Linking,
@@ -11,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
-import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
+import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome';
 import { useIsFocused } from '@react-navigation/native';
 import { useOutlet } from '@/hooks/useOutlet';
 import {
@@ -39,6 +40,7 @@ import {
   SUPPORT_WHATSAPP_DISPLAY,
   SUPPORT_WHATSAPP_PHONE,
 } from '@/config/support';
+import { whatsappCustomersApi } from '@/api/services/whatsappCustomers/whatsappCustomers.api';
 
 const initialDateRange = (): DateRangeValue => {
   const from = new Date();
@@ -78,6 +80,7 @@ export function WhatsappCustomersScreen() {
   const [draftCustomerType, setDraftCustomerType] = useState<WhatsappCustomerType>('ALL');
   const [draftTableName, setDraftTableName] = useState('');
   const [draftSort, setDraftSort] = useState<WhatsappCustomerSort>('RECENT');
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const integrationQuery = useWhatsappIntegrationQuery(outletId, isScreenFocused);
   const integrationActive = Boolean(
@@ -168,6 +171,21 @@ export function WhatsappCustomersScreen() {
     );
   };
 
+  const downloadCustomers = async () => {
+    if (!params || isDownloading) return;
+    setIsDownloading(true);
+    try {
+      await whatsappCustomersApi.downloadXlsx(params);
+    } catch (error) {
+      Alert.alert(
+        'Download failed',
+        error instanceof Error ? error.message : 'Unable to download the customer Excel file.',
+      );
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   const renderCustomer = ({ item }: { item: WhatsappCustomer }) => {
     const digits = phoneDigits(item.phone);
     const isNew = item.customerType === 'NEW';
@@ -224,7 +242,7 @@ export function WhatsappCustomersScreen() {
               {item.scansInRange} {item.scansInRange === 1 ? 'scan' : 'scans'} this period
               {item.lastTableName ? ` · Table ${item.lastTableName}` : ''}
             </Text>
-            <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.text.faint, marginTop: 2 }}>
+            <Text style={{ fontFamily: fonts.medium, fontSize: 11, color: colors.text.muted, marginTop: 2 }}>
               Last active {formatDateTime(item.lastSeenAt)}
             </Text>
           </View>
@@ -246,7 +264,7 @@ export function WhatsappCustomersScreen() {
               borderColor: colors.surface.border,
             }}
           >
-            <MaterialCommunityIcon name="whatsapp" size={17} color={colors.tint.green.fg} />
+            <FontAwesomeIcon name="whatsapp" size={17} color={colors.tint.green.fg} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => void openUrl(`tel:${item.phone}`, 'Calling is unavailable on this device.')}
@@ -333,7 +351,15 @@ export function WhatsappCustomersScreen() {
 
   const listHeader = (
     <View>
-      <View style={{ marginVertical: 8 }}>
+      <View
+        style={{
+          marginVertical: 8,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 10,
+        }}
+      >
         <DateRangePicker
           value={dateRange}
           onChange={(value) => {
@@ -341,7 +367,28 @@ export function WhatsappCustomersScreen() {
             setPage(1);
           }}
           outletId={outletId}
+          dark
         />
+
+        <TouchableOpacity
+          onPress={openFilters}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 7,
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            borderRadius: radii.chip,
+            backgroundColor: colors.surface.raised,
+            borderWidth: 1,
+            borderColor: colors.surface.border,
+          }}
+        >
+          <Icon name="sliders" size={14} color={colors.text.secondary} />
+          <Text style={{ fontFamily: fonts.semibold, fontSize: 12, color: colors.text.secondary }}>
+            Filters{activeFilterCount ? ` (${activeFilterCount})` : ''}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <View style={{ flexDirection: 'row', gap: 8, alignItems: 'stretch' }}>
@@ -402,27 +449,34 @@ export function WhatsappCustomersScreen() {
         </Text>
       ) : null}
 
-      <TouchableOpacity
-        onPress={openFilters}
-        style={{
-          alignSelf: 'flex-start',
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 7,
-          marginTop: 12,
-          paddingHorizontal: 12,
-          paddingVertical: 8,
-          borderRadius: radii.chip,
-          backgroundColor: colors.surface.raised,
-          borderWidth: 1,
-          borderColor: colors.surface.border,
-        }}
-      >
-        <Icon name="sliders" size={14} color={colors.text.secondary} />
-        <Text style={{ fontFamily: fonts.semibold, fontSize: 12, color: colors.text.secondary }}>
-          Filters{activeFilterCount ? ` (${activeFilterCount})` : ''}
-        </Text>
-      </TouchableOpacity>
+      <View style={{ alignItems: 'flex-end', marginTop: 10 }}>
+        <TouchableOpacity
+          onPress={() => void downloadCustomers()}
+          disabled={isDownloading || customersQuery.isLoading}
+          style={{
+            minHeight: 40,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            paddingHorizontal: 14,
+            borderRadius: radii.chip,
+            backgroundColor: colors.surface.raised,
+            borderWidth: 1,
+            borderColor: colors.surface.border,
+            opacity: isDownloading || customersQuery.isLoading ? 0.55 : 1,
+          }}
+        >
+          {isDownloading ? (
+            <ActivityIndicator size="small" color={colors.text.secondary} />
+          ) : (
+            <Icon name="download" size={15} color={colors.text.secondary} />
+          )}
+          <Text style={{ fontFamily: fonts.semibold, fontSize: 12, color: colors.text.secondary }}>
+            {isDownloading ? 'Preparing Excel' : 'Download Excel'}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       {data ? (
         <View style={{ marginTop: 18, gap: 10 }}>

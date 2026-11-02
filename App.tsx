@@ -59,6 +59,7 @@ export default function App() {
     Poppins_600SemiBold,
     Poppins_700Bold,
     Poppins_800ExtraBold,
+    FontAwesome: require("react-native-vector-icons/Fonts/FontAwesome.ttf"),
   });
 
   useEffect(() => {
