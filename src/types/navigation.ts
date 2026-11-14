@@ -47,6 +47,7 @@ export type AppTabsParamList = {
   ReportsTab: undefined;
   BillingTab: undefined;
   WhatsappTab: undefined;
+  FeedbackTab: undefined;
   SettingsTab: undefined;
 };
 

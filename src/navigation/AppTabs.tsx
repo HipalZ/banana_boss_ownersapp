@@ -7,6 +7,7 @@ import { ReportsStack } from './ReportsStack';
 import { BillingStack } from './BillingStack';
 import { SettingsStack } from './SettingsStack';
 import { WhatsappStack } from './WhatsappStack';
+import { CustomerFeedbackScreen } from '@/screens/Feedback/CustomerFeedbackScreen';
 import { colors, fonts, radii, shadows } from '@/theme';
 
 const Tab = createBottomTabNavigator<AppTabsParamList>();
@@ -23,6 +24,7 @@ export function AppTabs() {
             case 'ReportsTab':   iconName = 'bar-chart-2'; break;
             case 'BillingTab':   iconName = 'credit-card'; break;
             case 'WhatsappTab':  iconName = 'message-circle'; break;
+            case 'FeedbackTab':  iconName = 'star'; break;
             case 'SettingsTab':  iconName = 'user'; break;
             default:             iconName = 'circle';
           }
@@ -31,7 +33,7 @@ export function AppTabs() {
         tabBarActiveTintColor: colors.primaryDark,
         tabBarInactiveTintColor: colors.text.faint,
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10,
           fontFamily: fonts.semibold,
           marginTop: -2,
         },
@@ -55,6 +57,7 @@ export function AppTabs() {
       <Tab.Screen name="ReportsTab"  component={ReportsStack}  options={{ tabBarLabel: 'Reports' }} />
       <Tab.Screen name="BillingTab"  component={BillingStack}  options={{ tabBarLabel: 'Billing' }} />
       <Tab.Screen name="WhatsappTab" component={WhatsappStack} options={{ tabBarLabel: 'WhatsApp' }} />
+      <Tab.Screen name="FeedbackTab" component={CustomerFeedbackScreen} options={{ tabBarLabel: 'Feedback' }} />
       <Tab.Screen name="SettingsTab" component={SettingsStack} options={{ tabBarLabel: 'Account' }} />
     </Tab.Navigator>
   );

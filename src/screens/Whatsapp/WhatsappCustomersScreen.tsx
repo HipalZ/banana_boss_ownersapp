@@ -208,79 +208,47 @@ export function WhatsappCustomersScreen() {
             </Text>
           </View>
 
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
               <Text
-                numberOfLines={1}
-                style={{ flex: 1, fontFamily: fonts.bold, fontSize: 15, color: colors.text.base }}
+                numberOfLines={2}
+                style={{ flex: 1, minWidth: 0, fontFamily: fonts.bold, fontSize: 15, lineHeight: 20, color: colors.text.base }}
               >
                 {item.name}
               </Text>
-              <View
-                style={{
-                  borderRadius: radii.full,
-                  paddingHorizontal: 8,
-                  paddingVertical: 3,
-                  backgroundColor: isNew ? colors.tint.sky.bg : colors.tint.violet.bg,
-                }}
+              <TouchableOpacity
+                accessibilityLabel={`WhatsApp ${item.name}`}
+                onPress={() => void openUrl(`https://wa.me/${digits}`, 'WhatsApp could not be opened for this customer.')}
+                style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: radii.chip, backgroundColor: colors.tint.green.bg, borderWidth: 1, borderColor: colors.surface.border }}
               >
-                <Text
-                  style={{
-                    fontFamily: fonts.bold,
-                    fontSize: 9,
-                    color: isNew ? colors.tint.sky.fg : colors.tint.violet.fg,
-                  }}
-                >
-                  {isNew ? 'NEW' : 'REPEAT'}
-                </Text>
-              </View>
+                <FontAwesomeIcon name="whatsapp" size={17} color={colors.tint.green.fg} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                accessibilityLabel={`Call ${item.name}`}
+                onPress={() => void openUrl(`tel:${item.phone}`, 'Calling is unavailable on this device.')}
+                style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: radii.chip, backgroundColor: colors.surface.raised, borderWidth: 1, borderColor: colors.surface.border }}
+              >
+                <Icon name="phone" size={16} color={colors.text.muted} />
+              </TouchableOpacity>
             </View>
             <Text style={{ fontFamily: fonts.medium, fontSize: 13, color: colors.text.secondary, marginTop: 3 }}>
               {item.phone}
             </Text>
-            <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.text.muted, marginTop: 6 }}>
-              {item.scansInRange} {item.scansInRange === 1 ? 'scan' : 'scans'} this period
-              {item.lastTableName ? ` · Table ${item.lastTableName}` : ''}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 5, marginTop: 8 }}>
+              <View style={{ borderRadius: radii.full, paddingHorizontal: 8, paddingVertical: 3, backgroundColor: isNew ? colors.tint.sky.bg : colors.tint.violet.bg }}>
+                <Text style={{ fontFamily: fonts.bold, fontSize: 9, color: isNew ? colors.tint.sky.fg : colors.tint.violet.fg }}>
+                  {isNew ? 'NEW' : 'REPEAT'}
+                </Text>
+              </View>
+              <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.text.muted }}>
+                · {item.scansInRange} {item.scansInRange === 1 ? 'scan' : 'scans'} this period
+                {item.lastTableName ? ` · Table ${item.lastTableName}` : ''}
+              </Text>
+            </View>
             <Text style={{ fontFamily: fonts.medium, fontSize: 11, color: colors.text.muted, marginTop: 2 }}>
               Last active {formatDateTime(item.lastSeenAt)}
             </Text>
           </View>
-        </View>
-
-        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
-          <TouchableOpacity
-            onPress={() =>
-              void openUrl(`https://wa.me/${digits}`, 'WhatsApp could not be opened for this customer.')
-            }
-            style={{
-              width: 40,
-              height: 40,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: radii.chip,
-              backgroundColor: colors.tint.green.bg,
-              borderWidth: 1,
-              borderColor: colors.surface.border,
-            }}
-          >
-            <FontAwesomeIcon name="whatsapp" size={17} color={colors.tint.green.fg} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => void openUrl(`tel:${item.phone}`, 'Calling is unavailable on this device.')}
-            style={{
-              width: 40,
-              height: 40,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: radii.chip,
-              backgroundColor: colors.surface.raised,
-              borderWidth: 1,
-              borderColor: colors.surface.border,
-            }}
-          >
-            <Icon name="phone" size={16} color={colors.text.muted} />
-          </TouchableOpacity>
         </View>
       </AppCard>
     );
@@ -356,11 +324,11 @@ export function WhatsappCustomersScreen() {
           marginVertical: 8,
           flexDirection: 'row',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 10,
+          gap: 6,
         }}
       >
         <DateRangePicker
+          compact
           value={dateRange}
           onChange={(value) => {
             setDateRange(value);
@@ -375,8 +343,8 @@ export function WhatsappCustomersScreen() {
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 7,
-            paddingHorizontal: 12,
+            gap: 5,
+            paddingHorizontal: 9,
             paddingVertical: 8,
             borderRadius: radii.chip,
             backgroundColor: colors.surface.raised,
@@ -385,8 +353,36 @@ export function WhatsappCustomersScreen() {
           }}
         >
           <Icon name="sliders" size={14} color={colors.text.secondary} />
-          <Text style={{ fontFamily: fonts.semibold, fontSize: 12, color: colors.text.secondary }}>
-            Filters{activeFilterCount ? ` (${activeFilterCount})` : ''}
+          <Text style={{ fontFamily: fonts.semibold, fontSize: 11, color: activeFilterCount ? colors.primaryDark : colors.text.secondary }}>
+            Filters
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          accessibilityLabel="Download customers Excel"
+          onPress={() => void downloadCustomers()}
+          disabled={isDownloading || customersQuery.isLoading}
+          style={{
+            minHeight: 40,
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 5,
+            paddingHorizontal: 6,
+            borderRadius: radii.chip,
+            backgroundColor: colors.tint.green.bg,
+            borderWidth: 1,
+            borderColor: colors.tint.green.fg,
+            opacity: isDownloading || customersQuery.isLoading ? 0.55 : 1,
+          }}
+        >
+          {isDownloading ? (
+            <ActivityIndicator size="small" color={colors.tint.green.fg} />
+          ) : (
+            <Icon name="download" size={14} color={colors.tint.green.fg} />
+          )}
+          <Text numberOfLines={1} style={{ fontFamily: fonts.semibold, fontSize: 11, color: colors.tint.green.fg }}>
+            {isDownloading ? 'Preparing' : 'Download Excel'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -449,44 +445,15 @@ export function WhatsappCustomersScreen() {
         </Text>
       ) : null}
 
-      <View style={{ alignItems: 'flex-end', marginTop: 10 }}>
-        <TouchableOpacity
-          onPress={() => void downloadCustomers()}
-          disabled={isDownloading || customersQuery.isLoading}
-          style={{
-            minHeight: 40,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            paddingHorizontal: 14,
-            borderRadius: radii.chip,
-            backgroundColor: colors.surface.raised,
-            borderWidth: 1,
-            borderColor: colors.surface.border,
-            opacity: isDownloading || customersQuery.isLoading ? 0.55 : 1,
-          }}
-        >
-          {isDownloading ? (
-            <ActivityIndicator size="small" color={colors.text.secondary} />
-          ) : (
-            <Icon name="download" size={15} color={colors.text.secondary} />
-          )}
-          <Text style={{ fontFamily: fonts.semibold, fontSize: 12, color: colors.text.secondary }}>
-            {isDownloading ? 'Preparing Excel' : 'Download Excel'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
       {data ? (
-        <View style={{ marginTop: 18, gap: 10 }}>
+        <View style={{ marginTop: 14, gap: 8 }}>
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            <MetricCard title="Customers" value={String(data.summary.totalCustomers)} icon="users" />
-            <MetricCard title="QR scans" value={String(data.summary.totalScans)} icon="maximize" />
+            <MetricCard compact title="Customers" value={String(data.summary.totalCustomers)} icon="users" />
+            <MetricCard compact title="QR scans" value={String(data.summary.totalScans)} icon="maximize" />
           </View>
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            <MetricCard title="New" value={String(data.summary.newCustomers)} icon="user-plus" />
-            <MetricCard title="Returning" value={String(data.summary.returningCustomers)} icon="repeat" />
+            <MetricCard compact title="New" value={String(data.summary.newCustomers)} icon="user-plus" />
+            <MetricCard compact title="Returning" value={String(data.summary.returningCustomers)} icon="repeat" />
           </View>
         </View>
       ) : null}

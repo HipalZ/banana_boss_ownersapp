@@ -80,6 +80,7 @@ interface DateRangePickerProps {
   outletId?: string | null;
   /** Render the trigger button in light-on-dark style (for dark headers) */
   dark?: boolean;
+  compact?: boolean;
 }
 
 export const DateRangePicker = React.memo(function DateRangePicker({
@@ -87,6 +88,7 @@ export const DateRangePicker = React.memo(function DateRangePicker({
   onChange,
   outletId,
   dark = false,
+  compact = false,
 }: DateRangePickerProps) {
   const [open, setOpen] = useState(false);
   // 'list' = preset menu, 'calendar' = custom date-range picker
@@ -207,7 +209,7 @@ export const DateRangePicker = React.memo(function DateRangePicker({
         }}
       >
         <Icon name="calendar" size={14} color={iconColor} />
-        <Text style={{ fontFamily: fonts.medium, fontSize: 13, fontWeight: '500', color: triggerText }}>{label}</Text>
+        <Text numberOfLines={1} style={{ fontFamily: fonts.medium, fontSize: 13, fontWeight: '500', color: triggerText }}>{compact && value.preset === 'custom' ? 'Custom' : label}</Text>
         <Icon name="chevron-down" size={13} color={iconColor} />
       </TouchableOpacity>
 
