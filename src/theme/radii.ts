@@ -1,19 +1,18 @@
 /**
- * Border-radius tokens — "Midnight" (CRED-inspired) design system.
- * Generous rounding for a soft, premium fintech feel.
+ * Shared corner-radius scale from the customer app's menu surfaces.
  *
- *   chip  12  — chips, small badges
- *   tile  16  — icon tiles, steppers, inputs
- *   card  20  — cards, action buttons
- *   sheet 26  — bottom sheets, large feature cards
- *   hero  30  — hero media / hero cards
+ *   chip  10  — chips, small badges
+ *   tile  14  — icon tiles, steppers, inputs
+ *   card  18  — cards, action buttons
+ *   sheet 22  — bottom sheets, large feature cards
+ *   hero  26  — hero media / hero cards
  *   full  999 — avatars, pills, FABs
  */
 export const radii = {
-  chip: 12,
-  tile: 16,
-  card: 20,
-  sheet: 26,
-  hero: 30,
+  chip: 10,
+  tile: 14,
+  card: 18,
+  sheet: 22,
+  hero: 26,
   full: 999,
 } as const;

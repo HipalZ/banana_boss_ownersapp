@@ -4,6 +4,7 @@ import { API_BASE_URL, SERVER_SECRET, API_SERVER_SECRET } from '@/config/env';
 import { Platform } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import { normalizeReportRow, normalizeReportTotals } from './normalizeReportRow';
 
 function reportQuery(
   outletId: string,
@@ -35,7 +36,7 @@ export const REPORT_XLSX_ENDPOINTS = {
   table: '/r/reports/table-xlsx',
   charge: '/r/reports/charge-xlsx',
   'item-type': '/r/reports/item-type-xlsx',
-  'service-charge': '/r/reports/service-charge-xlsx',
+  'service-charge': '/r/reports/charge-xlsx',
   'net-sale': '/r/reports/net-sale-xlsx',
   'sale-report': '/r/reports/sale-report-xlsx',
   'bill-list': '/r/reports/sale-report-xlsx',
@@ -106,6 +107,11 @@ async function downloadWebXlsx(url: string, fallbackName: string) {
   const response = await fetch(url, { headers: apiHeaders() });
   if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 
+  const contentType = response.headers.get('Content-Type')?.toLowerCase() ?? '';
+  if (contentType.includes('text/html') || contentType.includes('application/json')) {
+    throw new Error('The server returned an error instead of an Excel file.');
+  }
+
   const blob = await response.blob();
   const serverFilename = filenameFromContentDisposition(response.headers.get('Content-Disposition'));
   const downloadUrl = window.URL.createObjectURL(blob);
@@ -119,12 +125,15 @@ async function downloadWebXlsx(url: string, fallbackName: string) {
 }
 
 async function downloadNativeXlsx(url: string, filename: string) {
+  const canShare = await Sharing.isAvailableAsync();
+  if (!canShare) throw new Error('Sharing is not available on this device.');
+
   const fileUri = `${FileSystem.cacheDirectory}${filename}`;
   const result = await FileSystem.downloadAsync(url, fileUri, { headers: apiHeaders() });
-  const canShare = await Sharing.isAvailableAsync();
-
-  if (!canShare) {
-    throw new Error('Sharing is not available on this device.');
+  const contentType = result.mimeType?.toLowerCase() ?? '';
+  if (result.status < 200 || result.status >= 300 || contentType.includes('text/html') || contentType.includes('application/json')) {
+    await FileSystem.deleteAsync(result.uri, { idempotent: true }).catch(() => {});
+    throw new Error(`Excel download failed (HTTP ${result.status}).`);
   }
 
   await Sharing.shareAsync(result.uri, {
@@ -145,49 +154,6 @@ export interface ReportResponse<T = any> {
 //   ApiResponse.data = [{ outletId, outletname, from, to, <namedField>: [...] }]
 // After apiClient strips the outer envelope we get that array.
 // Each helper below extracts the correct named field into { data: [] }.
-/**
- * The backend returns canonical field names (grossAmount, totalTax, totalSales,
- * contribution, categoryName, itemName, areaName, tableName, …) but the report
- * screens historically read short aliases (gross, tax, total, category, …).
- * Normalise each row so both the screens and any future code find the value —
- * we only FILL missing keys, never overwrite a value the server already sent.
- */
-function normalizeReportRow(row: any): any {
-  if (!row || typeof row !== 'object') return row;
-  const out: any = { ...row };
-  const fill = (key: string, ...candidates: any[]) => {
-    if (out[key] == null) {
-      const v = candidates.find((c) => c != null);
-      if (v != null) out[key] = v;
-    }
-  };
-
-  // Numeric aliases
-  fill('gross', row.grossAmount);
-  fill('grossAmount', row.gross);
-  fill('tax', row.totalTax, row.gst);
-  fill('totalTax', row.tax, row.gst);
-  fill('total', row.totalSales, row.amount, row.net);
-  fill('totalSales', row.total, row.amount);
-  fill('net', row.totalSales, row.total);
-  fill('count', row.categoryCount, row.billCount, row.orderCount);
-  fill('quantity', row.qty);
-  fill('contribution', row.contributionPercent);
-  fill('contributionPercent', row.contribution);
-
-  // Name aliases
-  fill('category', row.categoryName);
-  fill('parentCategory', row.parentCategoryName, row.categoryName);
-  fill('item', row.itemName);
-  fill('area', row.areaName);
-  fill('table', row.tableName);
-  fill('itemType', row.itemTypeName);
-  fill('addonName', row.addOnName);
-  fill('variantName', row.variant);
-
-  return out;
-}
-
 function extractField<T>(raw: any[], field: string): ReportResponse<T> {
   const first = Array.isArray(raw) ? (raw[0] ?? {}) : raw ?? {};
   const arr = first[field];
@@ -195,7 +161,7 @@ function extractField<T>(raw: any[], field: string): ReportResponse<T> {
   return {
     data: data.map(normalizeReportRow) as T[],
     pagination: first.pagination,
-    totals: first.totals,
+    totals: first.totals ? normalizeReportTotals(first.totals) : undefined,
     summary: first.summary,
   };
 }
@@ -225,32 +191,32 @@ export const reportsApi = {
   },
 
   // categories: [{ category, count, quantity, gross, discount, tax, total, contributionPercent }]
-  async getCategorySales(outletId: string, from: number, to: number): Promise<ReportResponse> {
-    const raw = await apiClient.get<any[]>(`/r/reports/category?${reportQuery(outletId, from, to)}`);
+  async getCategorySales(outletId: string, from: number, to: number, opts?: { page?: number }): Promise<ReportResponse> {
+    const raw = await apiClient.get<any[]>(`/r/reports/category?${reportQuery(outletId, from, to, opts?.page)}`);
     return extractField(raw, 'categories');
   },
 
   // parentCategories: [{ parentCategory, count, quantity, gross, discount, tax, total }]
-  async getParentCategorySales(outletId: string, from: number, to: number): Promise<ReportResponse> {
-    const raw = await apiClient.get<any[]>(`/r/reports/parent-category?${reportQuery(outletId, from, to)}`);
+  async getParentCategorySales(outletId: string, from: number, to: number, opts?: { page?: number }): Promise<ReportResponse> {
+    const raw = await apiClient.get<any[]>(`/r/reports/parent-category?${reportQuery(outletId, from, to, opts?.page)}`);
     return extractField(raw, 'parentCategories');
   },
 
   // discounts: [{ discountName, count, amount }]
-  async getDiscountReport(outletId: string, from: number, to: number): Promise<ReportResponse> {
-    const raw = await apiClient.get<any[]>(`/r/reports/discount?${reportQuery(outletId, from, to)}`);
+  async getDiscountReport(outletId: string, from: number, to: number, opts?: { page?: number }): Promise<ReportResponse> {
+    const raw = await apiClient.get<any[]>(`/r/reports/discount?${reportQuery(outletId, from, to, opts?.page)}`);
     return extractField(raw, 'discounts');
   },
 
-  // serviceCharge: [{ invoiceNumber, serviceCharge, containerCharge, deliveryCharge, total }]
+  // The charge endpoint returns one aggregate for service, container and delivery charges.
   async getServiceChargeReport(outletId: string, from: number, to: number, opts?: { page?: number; limit?: number }): Promise<ReportResponse> {
-    const raw = await apiClient.get<any[]>(`/r/reports/service-charge?${reportQuery(outletId, from, to, opts?.page, opts?.limit)}`);
-    return extractField(raw, 'serviceCharge');
+    const raw = await apiClient.get<any[]>(`/r/reports/charge?${reportQuery(outletId, from, to)}`);
+    return extractField(raw, 'charges');
   },
 
   // addons: [{ addonName, quantity, amount, totalSales }]
-  async getAddonWiseSales(outletId: string, from: number, to: number): Promise<ReportResponse> {
-    const raw = await apiClient.get<any[]>(`/r/reports/addon?${reportQuery(outletId, from, to)}`);
+  async getAddonWiseSales(outletId: string, from: number, to: number, opts?: { page?: number }): Promise<ReportResponse> {
+    const raw = await apiClient.get<any[]>(`/r/reports/addon?${reportQuery(outletId, from, to, opts?.page)}`);
     return extractField(raw, 'addons');
   },
 
@@ -273,8 +239,8 @@ export const reportsApi = {
   },
 
   // tables: [{ tableName, billCount, quantity, gross, tax, total }]
-  async getTableWiseSales(outletId: string, from: number, to: number): Promise<ReportResponse> {
-    const raw = await apiClient.get<any[]>(`/r/reports/table?${reportQuery(outletId, from, to)}`);
+  async getTableWiseSales(outletId: string, from: number, to: number, opts?: { page?: number }): Promise<ReportResponse> {
+    const raw = await apiClient.get<any[]>(`/r/reports/table?${reportQuery(outletId, from, to, opts?.page)}`);
     return extractField(raw, 'tables');
   },
 
@@ -285,14 +251,14 @@ export const reportsApi = {
   },
 
   // itemTypes: [{ itemType, quantity, gross, tax, total }]
-  async getItemTypeSales(outletId: string, from: number, to: number): Promise<ReportResponse> {
-    const raw = await apiClient.get<any[]>(`/r/reports/item-type?${reportQuery(outletId, from, to)}`);
+  async getItemTypeSales(outletId: string, from: number, to: number, opts?: { page?: number }): Promise<ReportResponse> {
+    const raw = await apiClient.get<any[]>(`/r/reports/item-type?${reportQuery(outletId, from, to, opts?.page)}`);
     return extractField(raw, 'itemTypes');
   },
 
   // itemVariants: [{ itemName, variantName, addonNames, quantity, gross, tax, total }]
-  async getItemVariantSales(outletId: string, from: number, to: number): Promise<ReportResponse> {
-    const raw = await apiClient.get<any[]>(`/r/reports/item-variant?${reportQuery(outletId, from, to)}`);
+  async getItemVariantSales(outletId: string, from: number, to: number, opts?: { page?: number }): Promise<ReportResponse> {
+    const raw = await apiClient.get<any[]>(`/r/reports/item-variant?${reportQuery(outletId, from, to, opts?.page)}`);
     return extractField(raw, 'itemVariants');
   },
 

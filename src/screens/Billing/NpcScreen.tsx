@@ -6,7 +6,8 @@ import type { BillingStackParamList } from '@/types/navigation';
 import { useOutlet } from '@/hooks/useOutlet';
 import { useNpcUsersQuery, useCreateNpcUserMutation } from '@/queries/npcUser';
 import { ScreenWrapper, TopBar } from '@/components/layout';
-import { AppCard } from '@/components/primitives/AppCard';
+import { BillingActionButton } from './BillingActionButton';
+import { BillingAccountRow } from './BillingAccountRow';
 import { AppButton } from '@/components/primitives/AppButton';
 import { AppInput } from '@/components/primitives/AppInput';
 import { LoadingSkeleton, EmptyState, ErrorState } from '@/components/shared';
@@ -51,81 +52,26 @@ export function NpcScreen() {
 
   return (
     <ScreenWrapper>
-      <TopBar 
-        title="NPC Accounts" 
-        showBack 
-        onBack={() => navigation.goBack()} 
-        rightActions={
-          <TouchableOpacity 
-            onPress={() => setModalVisible(true)}
-            style={{
-              backgroundColor: colors.primaryDark,
-              paddingHorizontal: 12,
-              paddingVertical: 8,
-              borderRadius: radii.chip,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 4,
-            }}
-            activeOpacity={0.8}
-          >
-            <Icon name="plus" size={14} color={colors.onPrimary} />
-            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: colors.onPrimary }}>Add NPC</Text>
-          </TouchableOpacity>
-        }
-      />
+      <TopBar title="NPC Accounts" showBack onBack={() => navigation.goBack()} rightActions={<BillingActionButton label="Add account" onPress={() => setModalVisible(true)} />} />
 
-      <View style={{ marginVertical: 8, paddingHorizontal: 4 }}>
-        <Text style={{ fontSize: 13, fontFamily: fonts.semibold, color: colors.text.muted }}>
-          Non-Paying Complimentary Registry
-        </Text>
+      <View style={{ marginTop: 16, marginBottom: 12, paddingHorizontal: 4 }}>
+        <Text style={{ fontSize: 18, fontFamily: fonts.bold, color: colors.text.base }}>Complimentary accounts</Text>
+        <Text style={{ fontSize: 12, fontFamily: fonts.medium, color: colors.text.muted, marginTop: 3 }}>{data?.length ?? 0} guest profiles</Text>
       </View>
 
-      {isLoading && <LoadingSkeleton type="bill-row" count={4} />}
-      {isError && <ErrorState onRetry={refetch} />}
-
-      <FlatList
+      {isLoading ? <LoadingSkeleton type="bill-row" count={4} /> : isError ? <ErrorState onRetry={refetch} /> : <FlatList
         data={data || []}
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => {
           const displayName = item.userName || item.name || 'Unknown User';
           const displayPhone = item.userPhone || item.phone || 'No Phone';
 
-          return (
-          <AppCard style={{ marginBottom: 10, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface.card }}>
-            <View style={{
-              width: 44,
-              height: 44,
-              borderRadius: radii.tile,
-              backgroundColor: colors.tint.rose.bg,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderWidth: 1,
-              borderColor: colors.tint.rose.bg,
-            }}>
-              <Icon name="user-check" size={20} color={colors.tint.rose.fg} />
-            </View>
-            <View style={{ flex: 1, marginLeft: 14 }}>
-              <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: colors.text.base }}>{displayName}</Text>
-              <Text style={{ fontSize: 12, fontFamily: fonts.medium, color: colors.text.muted, marginTop: 3 }}>
-                {displayPhone}
-              </Text>
-            </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: colors.text.faint }}>
-                Created
-              </Text>
-              <Text style={{ fontSize: 12, fontFamily: fonts.semibold, color: colors.text.secondary, marginTop: 2 }}>
-                {item.createdAt ? formatDateTime(new Date(item.createdAt).getTime()).split(',')[0] : 'N/A'}
-              </Text>
-            </View>
-          </AppCard>
-          );
+          return <BillingAccountRow name={displayName} phone={displayPhone} detail={item.createdAt ? formatDateTime(new Date(item.createdAt).getTime()).split(',')[0] : 'N/A'} detailLabel="Created" />;
         }}
         ListEmptyComponent={<EmptyState title="No NPC Registry Profiles" subtitle="Add Complimentary accounts for special guests." />}
         contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
-      />
+      />}
 
       {/* Add NPC User Modal */}
       <Modal

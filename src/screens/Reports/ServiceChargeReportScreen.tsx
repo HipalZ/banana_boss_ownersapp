@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback } from 'react';
+import { Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ReportsStackParamList } from '@/types/navigation';
@@ -6,57 +7,57 @@ import { useOutlet } from '@/hooks/useOutlet';
 import { useAppStore } from '@/stores/appStore';
 import { useServiceChargeReport } from '@/queries/reports';
 import { ScreenWrapper, TopBar } from '@/components/layout';
-import { DateRangePicker, ReportTable, ReportSummary, PaginationBar } from '@/components/shared';
+import { DateRangePicker, ReportTable, ReportSummary } from '@/components/shared';
+import { colors, fonts } from '@/theme';
 
 export function ServiceChargeReportScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<ReportsStackParamList>>();
   const { outletId } = useOutlet();
   const dateRange = useAppStore((s) => s.reportsDateRange);
   const setDateRange = useAppStore((s) => s.setReportsDateRange);
-  const [page, setPage] = useState(1);
-  const { data, isLoading, isError, refetch } = useServiceChargeReport(outletId, dateRange.from, dateRange.to, page);
+  const { data, isLoading, isError, refetch } = useServiceChargeReport(outletId, dateRange.from, dateRange.to);
 
-  const columns = useMemo(
-    () => ['Bill #', 'Service Charge', 'Container Charge', 'Delivery Charge', 'Total'],
-    [],
-  );
+  const columns = useMemo(() => ['Charge type', 'Amount'], []);
+  const charges = data?.data?.[0];
+  const serviceCharge = Number(charges?.serviceCharge ?? 0);
+  const containerCharge = Number(charges?.containerCharge ?? 0);
+  const deliveryCharge = Number(charges?.deliveryCharge ?? 0);
+  const totalCharges = serviceCharge + containerCharge + deliveryCharge;
 
   const rows = useMemo(
-    () =>
-      (data?.data ?? []).map((row: any) => [
-        row.invoiceNumber ?? '-',
-        row.serviceCharge ?? 0,
-        row.containerCharge ?? 0,
-        row.deliveryCharge ?? 0,
-        row.total ?? 0,
-      ]),
-    [data],
+    () => charges ? [
+      ['Service Charge', serviceCharge],
+      ['Container Charge', containerCharge],
+      ['Delivery Charge', deliveryCharge],
+    ] : [],
+    [charges, serviceCharge, containerCharge, deliveryCharge],
   );
+  const summaryRows = useMemo(() => charges ? [{ ...charges, total: totalCharges }] : [], [charges, totalCharges]);
 
   const handleDateChange = useCallback(
-    (r: any) => { setDateRange(r); setPage(1); },
+    (r: any) => { setDateRange(r); },
     [setDateRange],
   );
 
   return (
     <ScreenWrapper scrollable refreshControl onRefresh={refetch}>
-      <TopBar title="Service Charge Report" showBack onBack={() => navigation.goBack()} />
+      <TopBar title="Service & Other Charges" showBack onBack={() => navigation.goBack()} />
       <DateRangePicker value={dateRange} onChange={handleDateChange} outletId={outletId} />
+      <Text style={{ fontFamily: fonts.medium, fontSize: 12, lineHeight: 18, color: colors.text.muted, marginTop: 10 }}>
+        Paid and partially paid bills. Net Sales Summary counts fully paid orders excluding dues and settlements.
+      </Text>
       <ReportSummary
-        data={data?.data}
+        data={summaryRows}
         isLoading={isLoading}
-        totals={data?.totals}
-        totalCount={data?.pagination?.total}
         metrics={[
-          { label: 'Bills', count: true, icon: 'file-text' },
-          { label: 'Service Charge', fields: ['serviceCharge'], totalsKey: 'serviceCharge', format: 'currency', icon: 'briefcase', tone: 'success' },
-          { label: 'Container', fields: ['containerCharge'], totalsKey: 'containerCharge', format: 'currency', icon: 'box' },
-          { label: 'Delivery', fields: ['deliveryCharge'], totalsKey: 'deliveryCharge', format: 'currency', icon: 'truck' },
-          { label: 'Total Charges', fields: ['total'], totalsKey: 'total', format: 'currency', icon: 'trending-up', tone: 'success' },
+          { label: 'Bills in scope', fields: ['totalBills'], format: 'number', icon: 'file-text' },
+          { label: 'Service Charge', fields: ['serviceCharge'], format: 'currency', icon: 'bell', tone: 'success' },
+          { label: 'Container', fields: ['containerCharge'], format: 'currency', icon: 'box' },
+          { label: 'Delivery', fields: ['deliveryCharge'], format: 'currency', icon: 'truck' },
+          { label: 'Total Charges', fields: ['total'], format: 'currency', icon: 'trending-up', tone: 'success' },
         ]}
       />
-      <ReportTable columns={columns} rows={rows} isLoading={isLoading} isError={isError} onRetry={refetch} downloadReportId="service-charge" outletId={outletId} from={dateRange.from} to={dateRange.to} />
-      {data?.pagination && <PaginationBar pagination={data.pagination} onPageChange={setPage} />}
+      <ReportTable columns={columns} rows={rows} totalRow={charges ? ['TOTAL', totalCharges] : undefined} isLoading={isLoading} isError={isError} onRetry={refetch} downloadReportId="service-charge" outletId={outletId} from={dateRange.from} to={dateRange.to} />
     </ScreenWrapper>
   );
 }

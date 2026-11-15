@@ -41,7 +41,7 @@ export function TransferTableReportScreen() {
       <ReportSummary
         data={data?.data}
         isLoading={isLoading}
-        totalCount={data?.pagination?.total}
+        totalCount={data?.pagination?.totalRecords}
         metrics={[
           { label: 'Table Transfers', count: true, icon: 'arrow-right-circle', tone: 'muted' },
         ]}

@@ -40,6 +40,7 @@ export const ReportTable = React.memo(function ReportTable({
   from,
   to,
 }: ReportTableProps) {
+  const styles = makeStyles();
   const [isDownloading, setIsDownloading] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const columnWidths = useMemo(
@@ -156,9 +157,14 @@ export const ReportTable = React.memo(function ReportTable({
                 <View style={styles.detailShell}>
                   <Text style={styles.detailTitle}>{detail.title}</Text>
                   {detail.rows.map((detailRow, detailIndex) => (
-                    <View key={detailIndex} style={styles.detailRow}>
-                      <Text style={styles.detailItem}>{String(detailRow[1] ?? '')}</Text>
-                      <Text style={styles.detailValue}>{String(detailRow[4] ?? '')}</Text>
+                    <View key={detailIndex} style={styles.detailRecord}>
+                      <Text style={styles.detailRecordTitle}>#{detailIndex + 1} · {String(detailRow[1] ?? 'Item')}</Text>
+                      {detail.columns.map((column, columnIndex) => (
+                        <View key={`${column}-${columnIndex}`} style={styles.detailRow}>
+                          <Text style={styles.detailItem}>{column}</Text>
+                          <Text style={styles.detailValue}>{String(detailRow[columnIndex] ?? '—')}</Text>
+                        </View>
+                      ))}
                     </View>
                   ))}
                 </View>
@@ -186,7 +192,7 @@ export const ReportTable = React.memo(function ReportTable({
   );
 });
 
-const styles = {
+const makeStyles = () => ({
   toolbar: {
     flexDirection: 'row' as const,
     justifyContent: 'flex-end' as const,
@@ -268,7 +274,9 @@ const styles = {
     borderBottomColor: colors.surface.border,
   },
   detailTitle: { fontFamily: fonts.bold, fontSize: 11, color: colors.text.base, marginBottom: 8 },
+  detailRecord: { maxWidth: 460, paddingVertical: 8, borderTopWidth: 1, borderTopColor: colors.surface.borderSoft },
+  detailRecordTitle: { fontFamily: fonts.bold, fontSize: 12, color: colors.text.base, marginBottom: 4 },
   detailRow: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, gap: 12, paddingVertical: 5 },
   detailItem: { flex: 1, fontFamily: fonts.regular, fontSize: 12, color: colors.text.secondary },
-  detailValue: { fontFamily: fonts.bold, fontSize: 12, color: colors.text.base },
-};
+  detailValue: { flex: 1, fontFamily: fonts.bold, fontSize: 12, color: colors.text.base, textAlign: 'right' as const },
+});

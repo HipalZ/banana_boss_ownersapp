@@ -17,7 +17,7 @@ export function BillDetailScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<BillingStackParamList>>();
   const { billId } = route.params;
   const { data, isLoading, isError, refetch } = useBillByIdQuery(billId);
-  const { data: journey } = useBillJourneyQuery(billId);
+  const { data: journey, isLoading: journeyLoading, isError: journeyError, refetch: refetchJourney } = useBillJourneyQuery(billId);
   const { format } = useCurrency();
 
   // The raw bill has the totals; the journey resolves the table name + line
@@ -71,7 +71,11 @@ export function BillDetailScreen() {
           <Text style={{ fontSize: 16, fontFamily: fonts.extrabold, color: colors.text.base, marginTop: 20, marginBottom: 8 }}>
             Items
           </Text>
-          {items.length === 0 ? (
+          {items.length === 0 && journeyLoading ? (
+            <LoadingSkeleton type="bill-row" count={2} />
+          ) : items.length === 0 && journeyError ? (
+            <ErrorState onRetry={refetchJourney} />
+          ) : items.length === 0 ? (
             <Text style={{ fontSize: 13, fontFamily: fonts.regular, color: colors.text.faint, marginBottom: 8 }}>
               No item details available for this bill.
             </Text>

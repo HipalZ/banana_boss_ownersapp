@@ -1,7 +1,7 @@
 export interface ReportPagination {
   page: number;
   limit: number;
-  total: number;
+  totalRecords: number;
   totalPages: number;
 }
 

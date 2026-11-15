@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Image, View, Text, TouchableOpacity, Keyboard, StatusBar, Platform } from 'react-native';
+import { Image, View, Text, TouchableOpacity, Keyboard, StatusBar } from 'react-native';
 import { useAuth } from '@/hooks/useAuth';
+import { usePwaInstall } from '@/hooks/usePwaInstall';
 import { AppInput, AppButton, AppLoader } from '@/components/primitives';
 import { KeyboardWrapper } from '@/components/layout';
 import Icon from 'react-native-vector-icons/Feather';
 import { colors, fonts, radii, shadows } from '@/theme';
+import { normalizeIndianPhone } from '@/utils/normalizeIndianPhone';
 
 /** Banana Boss logo mark */
 function BananaLogo() {
@@ -32,63 +34,33 @@ function BananaLogo() {
   );
 }
 
-type LoginMode = 'email' | 'mobile';
-
 export function LoginScreen() {
-  const { login, loginAdmin, rememberedPhone, rememberedPassword } = useAuth();
+  const { login, rememberedPhone, rememberedPassword } = useAuth();
   // Login already sets selectedBusiness inside useAuth.login — no need to call it here.
 
-  const [mode, setMode] = useState<LoginMode>('mobile');
-  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState(rememberedPhone || '');
   const [password, setPassword] = useState(rememberedPassword || '');
   const [secure, setSecure] = useState(true);
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-
-  React.useEffect(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      const handler = (e: any) => {
-        e.preventDefault();
-        setDeferredPrompt(e);
-      };
-      window.addEventListener('beforeinstallprompt', handler);
-      return () => window.removeEventListener('beforeinstallprompt', handler);
-    }
-  }, []);
-
-  const handleInstallPWA = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setDeferredPrompt(null);
-      }
-    }
-  };
+  const { canInstall, install } = usePwaInstall();
 
   const handleLogin = async () => {
     Keyboard.dismiss();
     setError('');
-    if (mode === 'email') {
-      if (!email.trim() || !password.trim()) {
-        setError('Please enter email and password');
-        return;
-      }
-    } else if (!phone.trim() || !password.trim()) {
+    if (!phone.trim() || !password.trim()) {
       setError('Please enter phone and password');
+      return;
+    }
+    const normalizedPhone = normalizeIndianPhone(phone);
+    if (!normalizedPhone) {
+      setError('Enter a valid 10-digit mobile number');
       return;
     }
     setLoading(true);
     try {
-      if (mode === 'email') {
-        // Main admin → all businesses. Navigation happens via RootNavigator.
-        await loginAdmin(email.trim(), password.trim());
-      } else {
-        await login(phone.trim(), password.trim(), remember);
-      }
+      await login(normalizedPhone, password.trim(), remember);
     } catch (e: any) {
       setError(e?.message || 'Login failed. Please try again.');
     } finally {
@@ -98,7 +70,7 @@ export function LoginScreen() {
 
   return (
     <KeyboardWrapper style={{ backgroundColor: colors.surface.canvas }}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.surface.canvas} />
+      <StatusBar barStyle="light-content" backgroundColor={colors.surface.canvas} />
       <View style={{ flex: 1, justifyContent: 'center', padding: 24 }}>
 
         {/* ── Brand ──────────────────────────────────────────────── */}
@@ -123,67 +95,14 @@ export function LoginScreen() {
             ...shadows.soft,
           }}
         >
-          {/* Mode toggle: Email (admin, all outlets) vs Mobile (staff, single) */}
-          <View
-            style={{
-              flexDirection: 'row',
-              backgroundColor: colors.surface.canvas,
-              borderRadius: radii.chip,
-              padding: 4,
-              marginBottom: 20,
-            }}
-          >
-            {(['email', 'mobile'] as LoginMode[]).map((m) => {
-              const active = mode === m;
-              return (
-                <TouchableOpacity
-                  key={m}
-                  onPress={() => {
-                    setMode(m);
-                    setError('');
-                  }}
-                  style={{
-                    flex: 1,
-                    paddingVertical: 10,
-                    borderRadius: radii.chip - 2,
-                    backgroundColor: active ? colors.primary : 'transparent',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontFamily: fonts.semibold,
-                      fontSize: 13,
-                      color: active ? colors.text.onAccent : colors.text.muted,
-                    }}
-                  >
-                    {m === 'email' ? 'Email (Admin)' : 'Mobile (Staff)'}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          {mode === 'email' ? (
-            <AppInput
-              label="Email"
-              placeholder="Enter admin email"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={email}
-              onChangeText={setEmail}
-              leftIcon="mail"
-            />
-          ) : (
-            <AppInput
-              label="Phone Number"
-              placeholder="Enter phone number"
-              keyboardType="phone-pad"
-              value={phone}
-              onChangeText={setPhone}
-              leftIcon="phone"
-            />
-          )}
+          <AppInput
+            label="Phone Number"
+            placeholder="Enter phone number"
+            keyboardType="phone-pad"
+            value={phone}
+            onChangeText={setPhone}
+            leftIcon="phone"
+          />
           <AppInput
             label="Password"
             placeholder="Enter password"
@@ -229,7 +148,7 @@ export function LoginScreen() {
           <AppButton label="Login" onPress={handleLogin} loading={loading} />
 
           {/* PWA Install Prompt */}
-          {deferredPrompt && (
+          {canInstall && (
             <View style={{ marginTop: 24, paddingTop: 20, borderTopWidth: 1, borderColor: colors.surface.border, alignItems: 'center' }}>
               <View style={{ backgroundColor: colors.tint.accent.bg, padding: 10, borderRadius: radii.chip, marginBottom: 10 }}>
                 <Icon name="download" size={20} color={colors.tint.accent.fg} />
@@ -241,7 +160,7 @@ export function LoginScreen() {
                 Install Banana Boss on your home screen for fast, offline-ready access.
               </Text>
               <TouchableOpacity
-                onPress={handleInstallPWA}
+                onPress={install}
                 style={{
                   backgroundColor: colors.primary,
                   paddingVertical: 10,

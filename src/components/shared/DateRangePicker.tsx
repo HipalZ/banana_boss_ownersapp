@@ -9,7 +9,7 @@
  *    with corrected timestamps (no user action required).
  */
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Modal, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, Pressable, Switch, TextInput, Platform, ScrollView, useWindowDimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { useOutletDetails } from '@/queries/outlets';
 import { formatDateShort, getBusinessDayRange } from '@/utils/date';
@@ -73,6 +73,17 @@ const endOfDayMs = (ms: number) => {
   d.setHours(23, 59, 59, 999);
   return d.getTime();
 };
+const formatClock = (ms: number) => {
+  const date = new Date(ms);
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+};
+const withClock = (dayMs: number, clock: string, isEnd: boolean): number | null => {
+  const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(clock);
+  if (!match) return null;
+  const date = new Date(startOfDayMs(dayMs));
+  date.setHours(Number(match[1]), Number(match[2]), isEnd ? 59 : 0, isEnd ? 999 : 0);
+  return date.getTime();
+};
 
 interface DateRangePickerProps {
   value: DateRangeValue;
@@ -96,6 +107,11 @@ export const DateRangePicker = React.memo(function DateRangePicker({
   const [calMonth, setCalMonth] = useState(() => new Date());
   const [pendingFrom, setPendingFrom] = useState<number | null>(null);
   const [pendingTo, setPendingTo] = useState<number | null>(null);
+  const [customTimeEnabled, setCustomTimeEnabled] = useState(false);
+  const [pendingStartTime, setPendingStartTime] = useState('00:00');
+  const [pendingEndTime, setPendingEndTime] = useState('23:59');
+  const [rangeError, setRangeError] = useState('');
+  const { height: windowHeight } = useWindowDimensions();
 
   const { data: outletDetail } = useOutletDetails(outletId ?? null);
   const billingStart = outletDetail?.billingStartTime ?? 0;
@@ -114,6 +130,15 @@ export const DateRangePicker = React.memo(function DateRangePicker({
     },
     [billingStart, billingEnd],
   );
+  const calendarEndFromValue = useCallback((to: number) => {
+    const day = startOfDayMs(to);
+    const previousDay = new Date(day);
+    previousDay.setDate(previousDay.getDate() - 1);
+    const endFor = (candidate: number) => applyBilling({ from: candidate, to: endOfDayMs(candidate) }).to;
+    return Math.abs(endFor(previousDay.getTime()) - to) < Math.abs(endFor(day) - to)
+      ? previousDay.getTime()
+      : day;
+  }, [applyBilling]);
 
   // Re-apply when billing times load / change (mirrors banana_boss DateRangeDropdown)
   useEffect(() => {
@@ -130,29 +155,38 @@ export const DateRangePicker = React.memo(function DateRangePicker({
     (preset: DateRangePreset) => {
       if (preset === 'custom') {
         // Enter the calendar; seed pending range from the current value.
-        setPendingFrom(value.preset === 'custom' ? value.from : null);
-        setPendingTo(value.preset === 'custom' ? value.to : null);
+        setPendingFrom(value.preset === 'custom' ? startOfDayMs(value.from) : null);
+        setPendingTo(value.preset === 'custom' ? value.customTime ? startOfDayMs(value.to) : calendarEndFromValue(value.to) : null);
+        setCustomTimeEnabled(value.preset === 'custom' && value.customTime === true);
+        setPendingStartTime(value.preset === 'custom' && value.customTime ? formatClock(value.from) : '00:00');
+        setPendingEndTime(value.preset === 'custom' && value.customTime ? formatClock(value.to) : '23:59');
+        setRangeError('');
         setCalMonth(new Date(value.from || Date.now()));
         setMode('calendar');
         return;
       }
       const raw = getRawRange(preset);
       const { from, to } = applyBilling(raw);
-      onChange({ from, to, preset });
+      onChange({ from, to, preset, customTime: false });
       setOpen(false);
     },
-    [applyBilling, onChange, value.preset, value.from, value.to],
+    [applyBilling, calendarEndFromValue, onChange, value.preset, value.from, value.to, value.customTime],
   );
 
   const openSheet = useCallback(() => {
     setMode(value.preset === 'custom' ? 'calendar' : 'list');
-    setPendingFrom(value.preset === 'custom' ? value.from : null);
-    setPendingTo(value.preset === 'custom' ? value.to : null);
+    setPendingFrom(value.preset === 'custom' ? startOfDayMs(value.from) : null);
+    setPendingTo(value.preset === 'custom' ? value.customTime ? startOfDayMs(value.to) : calendarEndFromValue(value.to) : null);
+    setCustomTimeEnabled(value.preset === 'custom' && value.customTime === true);
+    setPendingStartTime(value.preset === 'custom' && value.customTime ? formatClock(value.from) : '00:00');
+    setPendingEndTime(value.preset === 'custom' && value.customTime ? formatClock(value.to) : '23:59');
+    setRangeError('');
     setCalMonth(new Date(value.from || Date.now()));
     setOpen(true);
-  }, [value.preset, value.from, value.to]);
+  }, [calendarEndFromValue, value.preset, value.from, value.to, value.customTime]);
 
   const onDayPress = useCallback((dayMs: number) => {
+    setRangeError('');
     // First tap (or restart) sets the start; second tap sets the end.
     if (pendingFrom == null || pendingTo != null) {
       setPendingFrom(dayMs);
@@ -167,18 +201,35 @@ export const DateRangePicker = React.memo(function DateRangePicker({
 
   const applyCustom = useCallback(() => {
     if (pendingFrom == null || pendingTo == null) return;
+    if (customTimeEnabled) {
+      const start = withClock(pendingFrom, pendingStartTime, false);
+      const end = withClock(pendingTo, pendingEndTime, true);
+      if (start == null || end == null) {
+        setRangeError('Enter a valid time in HH:mm format.');
+        return;
+      }
+      if (end <= start) {
+        setRangeError('End date and time must be after the start date and time.');
+        return;
+      }
+      onChange({ from: start, to: end, preset: 'custom', customTime: true });
+      setOpen(false);
+      return;
+    }
     const { from, to } = applyBilling({
       from: startOfDayMs(pendingFrom),
       to: endOfDayMs(pendingTo),
     });
-    onChange({ from, to, preset: 'custom' });
+    onChange({ from, to, preset: 'custom', customTime: false });
     setOpen(false);
-  }, [pendingFrom, pendingTo, applyBilling, onChange]);
+  }, [pendingFrom, pendingTo, customTimeEnabled, pendingStartTime, pendingEndTime, applyBilling, onChange]);
 
   // Label for the trigger
   const label =
     value.preset === 'custom'
-      ? `${formatDateShort(value.from)} – ${formatDateShort(value.to)}`
+      ? value.customTime
+        ? `${formatDateShort(value.from)}, ${formatClock(value.from)} – ${formatDateShort(value.to)}, ${formatClock(value.to)}`
+        : `${formatDateShort(value.from)} – ${formatDateShort(value.to)}`
       : PRESETS.find((p) => p.value === value.preset)?.label ?? 'Select date';
 
   const hasBilling = billingStart > 0 || billingEnd > 0;
@@ -209,7 +260,7 @@ export const DateRangePicker = React.memo(function DateRangePicker({
         }}
       >
         <Icon name="calendar" size={14} color={iconColor} />
-        <Text numberOfLines={1} style={{ fontFamily: fonts.medium, fontSize: 13, fontWeight: '500', color: triggerText }}>{compact && value.preset === 'custom' ? 'Custom' : label}</Text>
+        <Text numberOfLines={1} style={{ fontFamily: fonts.medium, fontSize: 13, fontWeight: '500', color: triggerText }}>{compact && value.preset === 'custom' ? value.customTime ? 'Custom time' : 'Custom' : label}</Text>
         <Icon name="chevron-down" size={13} color={iconColor} />
       </TouchableOpacity>
 
@@ -226,14 +277,16 @@ export const DateRangePicker = React.memo(function DateRangePicker({
           onPress={() => setOpen(false)}
         >
           <Pressable onPress={() => {}}>
-            <View
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
               style={{
                 backgroundColor: colors.surface.card,
                 borderTopLeftRadius: radii.hero,
                 borderTopRightRadius: radii.hero,
-                paddingTop: 8,
-                paddingBottom: 40,
+                maxHeight: windowHeight * 0.85,
               }}
+              contentContainerStyle={{ paddingTop: 8, paddingBottom: 40 }}
             >
               {/* drag handle */}
               <View
@@ -436,14 +489,66 @@ export const DateRangePicker = React.memo(function DateRangePicker({
                     })()}
                   </View>
 
+                  <View style={{ marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.surface.border }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <Icon name="clock" size={17} color={colors.text.secondary} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.text.base }}>Select specific time</Text>
+                        <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.text.muted, marginTop: 2 }}>
+                          {customTimeEnabled ? 'Use the exact times below' : 'Default: outlet billing hours'}
+                        </Text>
+                      </View>
+                      <Switch
+                        accessibilityLabel="Select specific time"
+                        value={customTimeEnabled}
+                        onValueChange={(enabled) => { setCustomTimeEnabled(enabled); setRangeError(''); }}
+                        trackColor={{ false: colors.surface.raised, true: colors.primary }}
+                        thumbColor={customTimeEnabled ? colors.onPrimary : colors.text.secondary}
+                      />
+                    </View>
+                    {customTimeEnabled && (
+                      <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
+                        {[
+                          { label: 'Start time', value: pendingStartTime, onChange: setPendingStartTime },
+                          { label: 'End time', value: pendingEndTime, onChange: setPendingEndTime },
+                        ].map((field) => (
+                          <View key={field.label} style={{ flex: 1 }}>
+                            <Text style={{ fontFamily: fonts.semibold, fontSize: 11, color: colors.text.secondary, marginBottom: 6 }}>{field.label}</Text>
+                            <TextInput
+                              accessibilityLabel={field.label}
+                              value={field.value}
+                              onChangeText={(text) => { field.onChange(text); setRangeError(''); }}
+                              maxLength={5}
+                              placeholder="HH:mm"
+                              placeholderTextColor={colors.text.faint}
+                              style={{
+                                borderWidth: 1,
+                                borderColor: colors.surface.border,
+                                borderRadius: radii.chip,
+                                backgroundColor: colors.surface.raised,
+                                color: colors.text.base,
+                                fontFamily: fonts.semibold,
+                                fontSize: 14,
+                                paddingHorizontal: 12,
+                                paddingVertical: 10,
+                                ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : {}),
+                              }}
+                            />
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+
                   {/* Status + Apply */}
                   <Text style={{ textAlign: 'center', fontFamily: fonts.medium, fontSize: 12, color: colors.text.muted, marginTop: 12, minHeight: 16 }}>
                     {pendingFrom != null && pendingTo == null
                       ? 'Now pick the end date'
                       : pendingFrom != null && pendingTo != null
-                        ? `${formatDateShort(pendingFrom)} → ${formatDateShort(pendingTo)}`
+                        ? `${formatDateShort(pendingFrom)} → ${formatDateShort(pendingTo)}${customTimeEnabled ? ` · ${pendingStartTime} → ${pendingEndTime}` : ''}`
                         : 'Pick a start date'}
                   </Text>
+                  {!!rangeError && <Text accessibilityRole="alert" style={{ textAlign: 'center', fontFamily: fonts.semibold, fontSize: 11, color: colors.danger, marginTop: 4 }}>{rangeError}</Text>}
                   <TouchableOpacity
                     disabled={pendingFrom == null || pendingTo == null}
                     onPress={applyCustom}
@@ -462,7 +567,7 @@ export const DateRangePicker = React.memo(function DateRangePicker({
                   </TouchableOpacity>
                 </View>
               )}
-            </View>
+            </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>

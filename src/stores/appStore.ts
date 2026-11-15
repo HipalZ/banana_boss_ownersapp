@@ -8,6 +8,8 @@ export interface DateRangeValue {
   from: number;
   to: number;
   preset: DateRangePreset;
+  /** Exact local clock times were selected for a custom range. */
+  customTime?: boolean;
 }
 
 export interface BillingFilters {
@@ -49,6 +51,12 @@ interface AppState {
   reportsDateRange: DateRangeValue;
   setReportsDateRange: (range: DateRangeValue) => void;
 
+  feedbackDateRange: DateRangeValue;
+  setFeedbackDateRange: (range: DateRangeValue) => void;
+
+  whatsappDateRange: DateRangeValue;
+  setWhatsappDateRange: (range: DateRangeValue) => void;
+
   billingDateRange: DateRangeValue;
   setBillingDateRange: (range: DateRangeValue) => void;
 
@@ -75,6 +83,20 @@ export const useAppStore = create<AppState>()(
         preset: 'today',
       },
       setReportsDateRange: (range) => set({ reportsDateRange: range }),
+
+      feedbackDateRange: {
+        from: (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); })(),
+        to: (() => { const d = new Date(); d.setHours(23, 59, 59, 999); return d.getTime(); })(),
+        preset: 'today',
+      },
+      setFeedbackDateRange: (range) => set({ feedbackDateRange: range }),
+
+      whatsappDateRange: {
+        from: (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); })(),
+        to: (() => { const d = new Date(); d.setHours(23, 59, 59, 999); return d.getTime(); })(),
+        preset: 'today',
+      },
+      setWhatsappDateRange: (range) => set({ whatsappDateRange: range }),
 
       billingDateRange: {
         from: (() => { const d = new Date(new Date().getFullYear(), new Date().getMonth(), 1); return d.getTime(); })(),

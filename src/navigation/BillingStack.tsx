@@ -8,12 +8,13 @@ import { BillDetailScreen } from '@/screens/Billing/BillDetailScreen';
 import { PaymentModesScreen } from '@/screens/Billing/PaymentModesScreen';
 import { DuesScreen } from '@/screens/Billing/DuesScreen';
 import { NpcScreen } from '@/screens/Billing/NpcScreen';
+import { colors } from '@/theme';
 
 const Stack = createNativeStackNavigator<BillingStackParamList>();
 
 const screenOptions = {
   headerShown: false,
-  contentStyle: { backgroundColor: '#FAF9F6' },
+  contentStyle: { backgroundColor: colors.surface.canvas },
   animation: 'slide_from_right' as const,
 };
 

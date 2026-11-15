@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Platform, Modal, Alert, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, ScrollView, useWindowDimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '@/hooks/useAuth';
 import { useOutlet } from '@/hooks/useOutlet';
 import { useAppStore } from '@/stores/appStore';
 import Icon from 'react-native-vector-icons/Feather';
 import { colors, fonts, radii } from '@/theme';
+import { useThemeStore } from '@/stores/themeStore';
 
 interface TopBarProps {
   title: string;
@@ -23,16 +24,17 @@ export const TopBar = React.memo(function TopBar({
   onBack,
 }: TopBarProps) {
   const navigation = useNavigation();
+  const { width: viewportWidth } = useWindowDimensions();
+  const compactHeader = viewportWidth < 440;
   const canGoBack = navigation.canGoBack();
   const shouldShowBack = showBack !== undefined ? showBack : canGoBack;
   
-  const { staff, logout, isAdmin } = useAuth();
+  const { isAdmin } = useAuth();
   const { outletId, currentOutlet, outlets, selectOutlet } = useOutlet();
   const setAdminInOutlet = useAppStore((s) => s.setAdminInOutlet);
-  const [modalVisible, setModalVisible] = useState(false);
+  const themeMode = useThemeStore((s) => s.mode);
+  const toggleThemeMode = useThemeStore((s) => s.toggleMode);
   const [outletModalVisible, setOutletModalVisible] = useState(false);
-  const me = staff?.[0];
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   // Outlet switcher: shown on top-level screens for admins or multi-outlet staff.
   const showOutletSwitcher =
@@ -49,51 +51,12 @@ export const TopBar = React.memo(function TopBar({
     setAdminInOutlet(false);
   };
 
-  React.useEffect(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      const handler = (e: any) => {
-        e.preventDefault();
-        setDeferredPrompt(e);
-      };
-      window.addEventListener('beforeinstallprompt', handler);
-      return () => window.removeEventListener('beforeinstallprompt', handler);
-    }
-  }, []);
-
-  const handleInstallPWA = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setDeferredPrompt(null);
-      }
-    }
-  };
-
   const handleBack = () => {
     if (onBack) {
       onBack();
     } else if (canGoBack) {
       navigation.goBack();
     }
-  };
-
-  const handleLogout = () => {
-    if (Platform.OS === 'web') {
-      if (window.confirm('Are you sure you want to logout?')) {
-        logout();
-      }
-      return;
-    }
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Logout', style: 'destructive', onPress: logout },
-      ],
-      { cancelable: true },
-    );
   };
 
   return (
@@ -109,6 +72,8 @@ export const TopBar = React.memo(function TopBar({
       {shouldShowBack && (
         <TouchableOpacity
           onPress={handleBack}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           style={{
             marginRight: 10,
@@ -126,7 +91,7 @@ export const TopBar = React.memo(function TopBar({
         </TouchableOpacity>
       )}
       <View style={{ flex: 1 }}>
-        <Text style={{ fontFamily: fonts.bold, fontSize: 18, color: colors.text.base }}>
+        <Text numberOfLines={1} style={{ fontFamily: fonts.bold, fontSize: 18, color: colors.text.base }}>
           {title}
         </Text>
         {subtitle ? (
@@ -134,18 +99,22 @@ export const TopBar = React.memo(function TopBar({
         ) : null}
       </View>
       
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         {showOutletSwitcher && (
           <TouchableOpacity
             onPress={() => setOutletModalVisible(true)}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={`Switch outlet. Current outlet: ${currentOutlet?.name ?? 'Select Outlet'}`}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              gap: 6,
-              maxWidth: 160,
-              paddingVertical: 8,
-              paddingHorizontal: 12,
+              justifyContent: 'center',
+              gap: compactHeader ? 3 : 6,
+              maxWidth: compactHeader ? 42 : 160,
+              minWidth: compactHeader ? 42 : undefined,
+              height: 36,
+              paddingHorizontal: compactHeader ? 7 : 12,
               borderRadius: radii.chip,
               backgroundColor: colors.surface.card,
               borderWidth: 1,
@@ -153,133 +122,39 @@ export const TopBar = React.memo(function TopBar({
             }}
           >
             <Icon name="home" size={13} color={colors.text.muted} />
-            <Text
-              numberOfLines={1}
-              style={{ fontFamily: fonts.semibold, fontSize: 12, color: colors.text.base, flexShrink: 1 }}
-            >
-              {currentOutlet?.name ?? 'Select Outlet'}
-            </Text>
+            {!compactHeader && (
+              <Text
+                numberOfLines={1}
+                style={{ fontFamily: fonts.semibold, fontSize: 12, color: colors.text.base, flexShrink: 1 }}
+              >
+                {currentOutlet?.name ?? 'Select Outlet'}
+              </Text>
+            )}
             <Icon name="chevron-down" size={13} color={colors.text.muted} />
           </TouchableOpacity>
         )}
 
         {rightActions}
 
-        {(me || isAdmin) && (
-          <>
-            <TouchableOpacity
-              onPress={() => setModalVisible(true)}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: radii.chip,
-                backgroundColor: colors.primary,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Text style={{ fontFamily: fonts.bold, fontSize: 16, color: colors.text.onAccent }}>
-                {(me?.name || me?.nickName || (isAdmin ? 'Admin' : 'User'))[0].toUpperCase()}
-              </Text>
-            </TouchableOpacity>
+        <TouchableOpacity
+          onPress={toggleThemeMode}
+          accessibilityRole="button"
+          accessibilityLabel={`Switch to ${themeMode === 'dark' ? 'light' : 'dark'} mode`}
+          activeOpacity={0.8}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: radii.chip,
+            backgroundColor: colors.surface.card,
+            borderWidth: 1,
+            borderColor: colors.surface.border,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Icon name={themeMode === 'dark' ? 'sun' : 'moon'} size={17} color={colors.text.base} />
+        </TouchableOpacity>
 
-            <Modal
-              visible={modalVisible}
-              transparent={true}
-              animationType="fade"
-              onRequestClose={() => setModalVisible(false)}
-            >
-              <TouchableOpacity
-                style={{ flex: 1, backgroundColor: colors.surface.overlay, justifyContent: 'center', alignItems: 'center' }}
-                activeOpacity={1}
-                onPress={() => setModalVisible(false)}
-              >
-                <TouchableOpacity
-                  activeOpacity={1}
-                  style={{
-                    backgroundColor: colors.surface.card,
-                    width: 300,
-                    borderRadius: radii.sheet,
-                    padding: 24,
-                    alignItems: 'center',
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 64,
-                      height: 64,
-                      borderRadius: radii.tile,
-                      backgroundColor: colors.primary,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginBottom: 16,
-                    }}
-                  >
-                    <Text style={{ fontFamily: fonts.bold, fontSize: 28, color: colors.text.onAccent }}>
-                      {(me?.name || me?.nickName || (isAdmin ? 'Admin' : 'User'))[0].toUpperCase()}
-                    </Text>
-                  </View>
-                  <Text style={{ fontFamily: fonts.bold, fontSize: 20, color: colors.text.base, marginBottom: 4 }}>
-                    {me?.name || me?.nickName || 'Outlet Admin'}
-                  </Text>
-                  {me?.phone ? (
-                    <Text style={{ fontFamily: fonts.medium, fontSize: 14, color: colors.text.muted, marginBottom: 2 }}>
-                      {me.phone}
-                    </Text>
-                  ) : null}
-                  {me?.roleName && (
-                    <Text style={{ fontFamily: fonts.regular, fontSize: 12, color: colors.text.faint, marginBottom: 24 }}>
-                      {me.roleName}
-                    </Text>
-                  )}
-
-                  {deferredPrompt && (
-                    <TouchableOpacity
-                      onPress={() => {
-                        setModalVisible(false);
-                        handleInstallPWA();
-                      }}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        backgroundColor: colors.tint.accent.bg,
-                        paddingVertical: 12,
-                        paddingHorizontal: 24,
-                        borderRadius: radii.tile,
-                        width: '100%',
-                        justifyContent: 'center',
-                        marginBottom: 12,
-                      }}
-                    >
-                      <Icon name="download" size={18} color={colors.tint.accent.fg} style={{ marginRight: 8 }} />
-                      <Text style={{ fontFamily: fonts.bold, fontSize: 15, color: colors.tint.accent.fg }}>Download App</Text>
-                    </TouchableOpacity>
-                  )}
-
-                  <TouchableOpacity
-                    onPress={() => {
-                      setModalVisible(false);
-                      handleLogout();
-                    }}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      backgroundColor: colors.tint.rose.bg,
-                      paddingVertical: 12,
-                      paddingHorizontal: 24,
-                      borderRadius: radii.tile,
-                      width: '100%',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Icon name="log-out" size={18} color={colors.danger} style={{ marginRight: 8 }} />
-                    <Text style={{ fontFamily: fonts.bold, fontSize: 15, color: colors.danger }}>Logout</Text>
-                  </TouchableOpacity>
-                </TouchableOpacity>
-              </TouchableOpacity>
-            </Modal>
-          </>
-        )}
       </View>
 
       {/* Outlet switcher modal */}

@@ -134,10 +134,10 @@ export function BillsListScreen() {
             borderWidth: 1,
             borderColor: isChild && !isDues ? colors.surface.borderSoft : colors.surface.border,
             shadowColor: colors.primaryDark,
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: isChild ? 0 : 0.02,
-            shadowRadius: 8,
-            elevation: isChild ? 0 : 1,
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: isChild ? 0 : 0.015,
+            shadowRadius: 5,
+            elevation: 0,
             marginLeft: isChild ? 20 : 0,
           }}
         >
@@ -156,7 +156,7 @@ export function BillsListScreen() {
                     borderWidth: 1,
                     borderColor: colors.surface.border,
                   }}>
-                    <Text style={{ fontSize: 10, fontFamily: fonts.bold, color: colors.text.muted }}>
+                    <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.text.muted }}>
                       DUES ADJUSTMENT
                     </Text>
                   </View>
@@ -170,13 +170,13 @@ export function BillsListScreen() {
                     borderWidth: 1,
                     borderColor: colors.primary,
                   }}>
-                    <Text style={{ fontSize: 10, fontFamily: fonts.bold, color: colors.tint.accent.fg }}>
+                    <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.tint.accent.fg }}>
                       SPLIT GROUP
                     </Text>
                   </View>
                 )}
               </View>
-              <Text style={{ fontSize: 11, fontFamily: fonts.regular, color: colors.text.faint, marginTop: 4 }}>
+              <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: colors.text.muted, marginTop: 4 }}>
                 {formatDateTime(item.createdAt)}
               </Text>
             </View>
@@ -185,7 +185,7 @@ export function BillsListScreen() {
                 {format(item.total)}
               </Text>
               {isDues && (
-                <Text style={{ fontSize: 10, fontFamily: fonts.medium, color: colors.text.faint, marginTop: 2 }}>
+                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: colors.text.muted, marginTop: 2 }}>
                   Excluded from Revenue
                 </Text>
               )}
@@ -196,10 +196,10 @@ export function BillsListScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <StatusBadge status={item.status} />
               {item.paymentMethod && !isDues && (
-                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: colors.text.muted }}>{item.paymentMethod}</Text>
+                <Text style={{ fontSize: 12, fontFamily: fonts.medium, color: colors.text.muted }}>{item.paymentMethod}</Text>
               )}
               {item.tableName && (
-                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: colors.text.muted }}>Table {item.tableName}</Text>
+                <Text style={{ fontSize: 12, fontFamily: fonts.medium, color: colors.text.muted }}>Table {item.tableName}</Text>
               )}
             </View>
 
@@ -261,7 +261,7 @@ export function BillsListScreen() {
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             <View>
               <Text style={{ fontFamily: fonts.extrabold, fontSize: 11, color: colors.text.faint, letterSpacing: 0.5, textTransform: 'uppercase' }}>
-                Total Revenue
+                Visible revenue
               </Text>
               <Text style={{ fontFamily: fonts.extrabold, fontSize: 20, color: colors.text.base, marginTop: 4 }}>
                 {format(metrics.salesTotal)}
@@ -269,7 +269,7 @@ export function BillsListScreen() {
             </View>
             <View style={{ alignItems: 'flex-end' }}>
               <Text style={{ fontFamily: fonts.extrabold, fontSize: 11, color: colors.text.faint, letterSpacing: 0.5, textTransform: 'uppercase' }}>
-                Bills / Dues
+                Bills / dues shown
               </Text>
               <Text style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.text.secondary, marginTop: 4 }}>
                 {metrics.regularBillsCount} bills | Dues {format(metrics.duesTotal)}
@@ -279,17 +279,14 @@ export function BillsListScreen() {
         </AppCard>
       )}
 
-      {isLoading && <LoadingSkeleton type="bill-row" count={6} />}
-      {isError && <ErrorState onRetry={refetch} />}
-
-      <FlatList
+      {isLoading ? <LoadingSkeleton type="bill-row" count={6} /> : isError ? <ErrorState onRetry={refetch} /> : <FlatList
         data={groupedBills}
         keyExtractor={(item) => item._id}
         renderItem={renderItem}
         ListEmptyComponent={<EmptyState title="No bills found" subtitle="Try adjusting the date range or filters." />}
         contentContainerStyle={{ paddingBottom: 120 }} // Keep spacer for floating bottom tabs
         showsVerticalScrollIndicator={false}
-      />
+      />}
 
       {data && Math.ceil((data.total || 0) / (data.limit || 20)) > 1 && (
         <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 16 }}>

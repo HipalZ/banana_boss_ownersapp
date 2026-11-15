@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput, Text, TouchableOpacity, type TextInputProps } from 'react-native';
+import { View, TextInput, Text, TouchableOpacity, Platform, type TextInputProps } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { colors, fonts, radii } from '@/theme';
 
@@ -56,6 +56,10 @@ export const AppInput = React.memo(function AppInput({
           style={[
             {
               flex: 1,
+              minWidth: 0,
+              borderWidth: 0,
+              backgroundColor: 'transparent',
+              ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : {}),
               paddingVertical: 14,
               fontFamily: fonts.medium,
               fontSize: 14,

@@ -1,13 +1,18 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { Image, View, Text } from 'react-native';
+import { MotiView } from 'moti';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { BillingStackParamList } from '@/types/navigation';
 import { useOutlet } from '@/hooks/useOutlet';
 import { usePaymentModesQuery } from '@/queries/paymentMode';
 import { useDuesUsersQuery } from '@/queries/duesUser';
+import { useBillsDashboardQuery } from '@/queries/bills';
+import { useAppStore } from '@/stores/appStore';
 import { ScreenWrapper, TopBar } from '@/components/layout';
-import { SectionHeader } from '@/components/shared';
+import { DateRangePicker, ScreenEntrance } from '@/components/shared';
+import { OwnerDashboardHero } from '@/components/shared/OwnerDashboardHero';
+import { OwnerSummaryMetric } from '@/components/shared/OwnerSummaryMetric';
 import { AppCard } from '@/components/primitives/AppCard';
 import Icon from 'react-native-vector-icons/Feather';
 import { formatINR } from '@/utils/currency';
@@ -16,11 +21,10 @@ import { colors, fonts } from '@/theme';
 type Nav = NativeStackNavigationProp<BillingStackParamList>;
 
 const navItems = [
-  { title: 'Sales Dashboard', subtitle: 'Analytics & metrics', icon: 'bar-chart-2', screen: 'SalesDashboard' as const, color: colors.tint.sky.bg, iconColor: colors.tint.sky.fg },
-  { title: 'Billings', subtitle: 'All bills & invoices', icon: 'credit-card', screen: 'BillsList' as const, color: colors.tint.amber.bg, iconColor: colors.tint.amber.fg },
-  { title: 'Payment Modes', subtitle: 'Manage payments', icon: 'dollar-sign', screen: 'PaymentModes' as const, color: colors.tint.green.bg, iconColor: colors.tint.green.fg },
-  { title: 'Dues Ledger', subtitle: 'Outstanding amounts', icon: 'users', screen: 'Dues' as const, color: colors.tint.violet.bg, iconColor: colors.tint.violet.fg },
-  { title: 'NPC Accounts', subtitle: 'Non-paying registry', icon: 'user-check', screen: 'Npc' as const, color: colors.tint.rose.bg, iconColor: colors.tint.rose.fg },
+  { title: 'Bills', subtitle: 'All bills & invoices', image: require('../../../assets/dashboard-3d/billing.png'), screen: 'BillsList' as const },
+  { title: 'Payment modes', subtitle: 'Manage payments', image: require('../../../assets/dashboard-3d/sales.png'), screen: 'PaymentModes' as const },
+  { title: 'Dues ledger', subtitle: 'Outstanding amounts', image: require('../../../assets/dashboard-3d/operations.png'), screen: 'Dues' as const },
+  { title: 'NPC accounts', subtitle: 'Non-paying registry', image: require('../../../assets/dashboard-3d/accounts.png'), screen: 'Npc' as const },
 ];
 
 export function BillingOverviewScreen() {
@@ -28,71 +32,90 @@ export function BillingOverviewScreen() {
   const { outletId, currentOutlet } = useOutlet();
   const { data: paymentModes } = usePaymentModesQuery(outletId);
   const { data: duesUsers } = useDuesUsersQuery(outletId);
+  const dateRange = useAppStore((s) => s.reportsDateRange);
+  const setDateRange = useAppStore((s) => s.setReportsDateRange);
+  const { data: dashboard, isLoading, isError } = useBillsDashboardQuery(outletId, dateRange.from, dateRange.to);
+  const totals = dashboard?.paidAll?.totals;
 
-  const totalDues = duesUsers?.reduce((sum, u) => sum + (u.currentDuesAmount || 0), 0) || 0;
+  const totalDues = duesUsers?.reduce((sum, u) => sum + Number(u.currentDuesAmount || 0), 0) || 0;
 
   return (
     <ScreenWrapper scrollable>
-      <TopBar title={currentOutlet?.name || 'Billing Overview'} subtitle="Restaurant Back-Office" showBack={false} />
+      <TopBar title={currentOutlet?.name || 'Billing'} showBack={false} />
+      <View style={{ width: '100%', maxWidth: 720, alignSelf: 'center' }}>
       
-      <View style={{ marginVertical: 8 }}>
-        <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.text.muted, marginBottom: 2 }}>
-          {new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' })}
+      <View style={{ marginTop: 10, marginBottom: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <Text style={{ fontFamily: fonts.bold, fontSize: 28, color: colors.text.base, letterSpacing: -0.4 }}>
+          Billing
         </Text>
-        <Text style={{ fontFamily: fonts.extrabold, fontSize: 24, color: colors.text.base }}>
-          Overview
-        </Text>
+        <DateRangePicker compact value={dateRange} onChange={setDateRange} outletId={outletId} />
       </View>
 
-      <SectionHeader title="Register & Ledgers" />
+      <ScreenEntrance>
+        <OwnerDashboardHero
+          title="Net sales"
+          value={dashboard && !isError ? formatINR(totals?.netAfterDiscountAndCharges ?? 0) : undefined}
+          detail={isError ? 'Summary unavailable · open dashboard' : 'Open sales dashboard'}
+          image={require('../../../assets/dashboard-3d/sales.png')}
+          loading={isLoading}
+          onPress={() => navigation.navigate('SalesDashboard')}
+        />
 
-      <View style={{ gap: 12, marginTop: 4 }}>
+        <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+          {[
+            { label: 'Orders', value: dashboard && !isError ? String(totals?.ordersCount ?? 0) : '—', screen: 'SalesDashboard' as const },
+            { label: 'Current dues balance', value: duesUsers ? formatINR(totalDues) : '—', screen: 'Dues' as const },
+          ].map((metric) => (
+            <View key={metric.label} style={{ flex: 1, minWidth: 0 }}>
+              <OwnerSummaryMetric label={metric.label} value={isLoading && metric.label === 'Orders' ? '…' : metric.value} onPress={() => navigation.navigate(metric.screen)} />
+            </View>
+          ))}
+        </View>
+
+        <Text style={{ fontFamily: fonts.bold, fontSize: 19, color: colors.text.base, marginTop: 28, marginBottom: 4, letterSpacing: -0.35 }}>Billing tools</Text>
+        <Text style={{ fontFamily: fonts.regular, fontSize: 12, color: colors.text.muted, marginBottom: 12 }}>Bills, payments and customer accounts</Text>
+
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
         {navItems.map((item, index) => {
           const subtitle =
             item.screen === 'PaymentModes'
-              ? `${paymentModes?.length || 0} active modes`
+              ? `${paymentModes?.filter((mode) => mode.status).length || 0} active modes`
               : item.screen === 'Dues'
-              ? `${formatINR(totalDues)} outstanding`
+              ? `${formatINR(totalDues)} across all dates`
               : item.subtitle;
 
           return (
+            <MotiView key={item.screen} from={{ opacity: 0.82, translateY: 8 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 240, delay: index * 45 }} style={{ width: '48%', flexGrow: 1 }}>
             <AppCard
-              key={index}
               onPress={() => navigation.navigate(item.screen)}
               style={{
-                padding: 18,
-                flexDirection: 'row',
-                alignItems: 'center',
+                minHeight: 154,
+                padding: 16,
+                justifyContent: 'space-between',
                 backgroundColor: colors.surface.card,
+                borderColor: colors.surface.border,
               }}
             >
-              <View
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 14,
-                  backgroundColor: item.color,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginRight: 16,
-                }}
-              >
-                <Icon name={item.icon} size={22} color={item.iconColor} />
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <Image source={item.image} resizeMode="contain" style={{ width: 64, height: 64 }} />
+                <Icon name="arrow-up-right" size={17} color={colors.text.muted} />
               </View>
               
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontFamily: fonts.bold, fontSize: 15, color: colors.text.base }}>
+              <View>
+                <Text numberOfLines={2} style={{ fontFamily: fonts.bold, fontSize: 14, color: colors.text.base }}>
                   {item.title}
                 </Text>
-                <Text style={{ fontFamily: fonts.medium, fontSize: 12, color: colors.text.muted, marginTop: 3 }}>
+                <Text numberOfLines={2} style={{ fontFamily: fonts.medium, fontSize: 12, lineHeight: 17, color: colors.text.muted, marginTop: 4 }}>
                   {subtitle}
                 </Text>
               </View>
-
-              <Icon name="arrow-right" size={18} color={colors.text.faint} />
             </AppCard>
+            </MotiView>
           );
         })}
+        </View>
+      </ScreenEntrance>
+      <View style={{ height: 24 }} />
       </View>
     </ScreenWrapper>
   );

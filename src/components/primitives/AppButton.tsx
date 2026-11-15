@@ -1,6 +1,9 @@
 import React from 'react';
 import { TouchableOpacity, Text, ActivityIndicator, type TouchableOpacityProps } from 'react-native';
+import Animated, { ReduceMotion, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { colors, fonts, radii } from '@/theme';
+
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
 interface AppButtonProps extends TouchableOpacityProps {
   label: string;
@@ -10,7 +13,7 @@ interface AppButtonProps extends TouchableOpacityProps {
 }
 
 const variantMap = {
-  primary: { bg: colors.primaryDark, text: colors.text.white, border: 'transparent' },
+  primary: { bg: colors.primaryDark, text: colors.onPrimary, border: 'transparent' },
   secondary: { bg: colors.surface.raised, text: colors.text.base, border: colors.surface.border },
   ghost: { bg: 'transparent', text: colors.text.base, border: 'transparent' },
   danger: { bg: colors.danger, text: colors.text.white, border: 'transparent' },
@@ -29,15 +32,28 @@ export const AppButton = React.memo(function AppButton({
   size = 'md',
   disabled,
   style,
+  onPressIn,
+  onPressOut,
   ...props
 }: AppButtonProps) {
   const v = variantMap[variant];
   const s = sizeMap[size];
+  const scale = useSharedValue(1);
+  const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const spring = { damping: 20, stiffness: 260, reduceMotion: ReduceMotion.System };
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.75}
+    <AnimatedTouchableOpacity
+      activeOpacity={0.9}
       disabled={disabled || loading}
+      onPressIn={(event) => {
+        scale.value = withSpring(0.98, spring);
+        onPressIn?.(event);
+      }}
+      onPressOut={(event) => {
+        scale.value = withSpring(1, spring);
+        onPressOut?.(event);
+      }}
       style={[
         {
           backgroundColor: v.bg,
@@ -51,6 +67,7 @@ export const AppButton = React.memo(function AppButton({
           borderColor: v.border,
         },
         style,
+        pressStyle,
       ]}
       {...props}
     >
@@ -61,6 +78,6 @@ export const AppButton = React.memo(function AppButton({
           {label}
         </Text>
       )}
-    </TouchableOpacity>
+    </AnimatedTouchableOpacity>
   );
 });

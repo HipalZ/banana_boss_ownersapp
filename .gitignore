@@ -40,3 +40,8 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Local planning and QA workspaces
+/docs/
+/qa-dashboard/
+/scripts/reports-contract.test.mjs

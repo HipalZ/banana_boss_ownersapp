@@ -1,50 +1,61 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { Image, Pressable, View, Text } from 'react-native';
+import { AnimatePresence, MotiView } from 'moti';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ReportsStackParamList } from '@/types/navigation';
 import { useOutlet } from '@/hooks/useOutlet';
 import { useAppStore } from '@/stores/appStore';
 import { ScreenWrapper, TopBar } from '@/components/layout';
-import { DateRangePicker } from '@/components/shared';
+import { DateRangePicker, ScreenEntrance } from '@/components/shared';
 import { AppCard } from '@/components/primitives/AppCard';
+import { OwnerDashboardHero } from '@/components/shared/OwnerDashboardHero';
+import { OwnerSummaryMetric } from '@/components/shared/OwnerSummaryMetric';
+import { useNetSalesReport } from '@/queries/reports';
+import { formatINR } from '@/utils/currency';
 import Icon from 'react-native-vector-icons/Feather';
 import { colors, fonts } from '@/theme';
+import { aggregateNetSalesTotals } from './netSalesTotals';
 
 const reportGroups = [
   {
     title: 'Sales & Revenue',
+    image: require('../../../assets/dashboard-3d/sales.png'),
     items: [
-      { title: 'Net Sales Summary', icon: 'pie-chart', screen: 'NetSalesSummary' as const, color: colors.tint.sky.bg, iconColor: colors.tint.sky.fg },
-      { title: 'Bill-wise Sales', icon: 'file-text', screen: 'BillWiseReport' as const, color: colors.tint.sky.bg, iconColor: colors.tint.sky.fg },
-      { title: 'Outstanding Dues', icon: 'user-minus', screen: 'OutstandingDues' as const, color: colors.tint.rose.bg, iconColor: colors.tint.rose.fg },
-      { title: 'Discounts Issued', icon: 'percent', screen: 'DiscountReport' as const, color: colors.tint.rose.bg, iconColor: colors.tint.rose.fg },
-      { title: 'Service Charge', icon: 'briefcase', screen: 'ServiceChargeReport' as const, color: colors.tint.violet.bg, iconColor: colors.tint.violet.fg },
+      { title: 'Outstanding Dues', screen: 'OutstandingDues' as const },
+      { title: 'Discounts Issued', screen: 'DiscountReport' as const },
+      { title: 'Service Charge', screen: 'ServiceChargeReport' as const },
     ],
   },
   {
     title: 'Menu & Categories',
+    image: require('../../../assets/dashboard-3d/menu.png'),
     items: [
-      { title: 'Item Sales', icon: 'shopping-bag', screen: 'ItemSalesReport' as const, color: colors.tint.amber.bg, iconColor: colors.tint.amber.fg },
-      { title: 'Category Sales', icon: 'grid', screen: 'CategorySalesReport' as const, color: colors.tint.amber.bg, iconColor: colors.tint.amber.fg },
-      { title: 'Parent Category', icon: 'layers', screen: 'ParentCategoryReport' as const, color: colors.tint.amber.bg, iconColor: colors.tint.amber.fg },
-      { title: 'Addon Sales', icon: 'plus-circle', screen: 'AddonSalesReport' as const, color: colors.tint.violet.bg, iconColor: colors.tint.violet.fg },
-      { title: 'Item Type', icon: 'tag', screen: 'ItemTypeReport' as const, color: colors.tint.sky.bg, iconColor: colors.tint.sky.fg },
-      { title: 'Item Variant', icon: 'list', screen: 'ItemVariantReport' as const, color: colors.tint.sky.bg, iconColor: colors.tint.sky.fg },
-      { title: 'Open Item Sales', icon: 'unlock', screen: 'OpenItemSales' as const, color: colors.tint.green.bg, iconColor: colors.tint.green.fg },
+      { title: 'Item Sales', screen: 'ItemSalesReport' as const },
+      { title: 'Parent Category', screen: 'ParentCategoryReport' as const },
+      { title: 'Addon Sales', screen: 'AddonSalesReport' as const },
+      { title: 'Item Type', screen: 'ItemTypeReport' as const },
+      { title: 'Open Item Sales', screen: 'OpenItemSales' as const },
     ],
   },
   {
     title: 'Audits & Operations',
+    image: require('../../../assets/dashboard-3d/operations.png'),
     items: [
-      { title: 'Area Report', icon: 'map-pin', screen: 'AreaReport' as const, color: colors.tint.green.bg, iconColor: colors.tint.green.fg },
-      { title: 'Area-Item Sales', icon: 'map', screen: 'AreaItemReport' as const, color: colors.tint.green.bg, iconColor: colors.tint.green.fg },
-      { title: 'Table Report', icon: 'layout', screen: 'TableReport' as const, color: colors.tint.green.bg, iconColor: colors.tint.green.fg },
-      { title: 'Deleted KOTs', icon: 'trash-2', screen: 'DeletedKotReport' as const, color: colors.tint.rose.bg, iconColor: colors.tint.rose.fg },
-      { title: 'Transfer KOTs', icon: 'arrow-right-circle', screen: 'TransferKotReport' as const, color: colors.tint.violet.bg, iconColor: colors.tint.violet.fg },
-      { title: 'Transfer Tables', icon: 'shuffle', screen: 'TransferTableReport' as const, color: colors.tint.violet.bg, iconColor: colors.tint.violet.fg },
+      { title: 'Area Report', screen: 'AreaReport' as const },
+      { title: 'Area-Item Sales', screen: 'AreaItemReport' as const },
+      { title: 'Table Report', screen: 'TableReport' as const },
+      { title: 'Deleted KOTs', screen: 'DeletedKotReport' as const },
+      { title: 'Transfer KOTs', screen: 'TransferKotReport' as const },
+      { title: 'Transfer Tables', screen: 'TransferTableReport' as const },
     ],
   },
+];
+
+const quickReports = [
+  { title: 'Bill-wise Sales', image: require('../../../assets/dashboard-3d/billing.png'), screen: 'BillWiseReport' as const },
+  { title: 'Item Variant Sales', image: require('../../../assets/dashboard-3d/menu.png'), screen: 'ItemVariantReport' as const },
+  { title: 'Category Sales', image: require('../../../assets/dashboard-3d/operations.png'), screen: 'CategorySalesReport' as const },
 ];
 
 export function ReportsOverviewScreen() {
@@ -52,71 +63,115 @@ export function ReportsOverviewScreen() {
   const { outletId, currentOutlet } = useOutlet();
   const reportsDateRange = useAppStore((s) => s.reportsDateRange);
   const setReportsDateRange = useAppStore((s) => s.setReportsDateRange);
+  const { data: reportRows = [], isLoading, isError, isPlaceholderData } = useNetSalesReport(outletId, reportsDateRange.from, reportsDateRange.to);
+  const totals = React.useMemo(() => aggregateNetSalesTotals(reportRows as any[]), [reportRows]);
+  const hasCurrentData = !isError && !isPlaceholderData && reportRows.length > 0;
+  const [expandedGroup, setExpandedGroup] = React.useState<string | null>(null);
 
   return (
     <ScreenWrapper scrollable>
-      <TopBar title={currentOutlet?.name || 'Reports'} subtitle="Business Analytics" showBack={false} />
+      <TopBar title={currentOutlet?.name || 'Reports'} showBack={false} />
 
-      <View style={{ marginVertical: 8 }}>
-        <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.text.muted, marginBottom: 2 }}>
-          Data Insights
+      <View style={{ width: '100%', maxWidth: 720, alignSelf: 'center' }}>
+
+      <View style={{ marginTop: 10, marginBottom: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <Text style={{ flexShrink: 1, fontFamily: fonts.bold, fontSize: 28, color: colors.text.base, letterSpacing: -0.4 }}>
+          Reports
         </Text>
-        <Text style={{ fontFamily: fonts.extrabold, fontSize: 24, color: colors.text.base }}>
-          Reports Hub
-        </Text>
+        <DateRangePicker compact value={reportsDateRange} onChange={setReportsDateRange} outletId={outletId} />
       </View>
 
-      <DateRangePicker value={reportsDateRange} onChange={setReportsDateRange} outletId={outletId} />
+      <ScreenEntrance>
+        <OwnerDashboardHero
+          title="Total sales"
+          value={hasCurrentData ? formatINR(totals.totalSales) : undefined}
+          detail={isError ? 'Summary unavailable · open report' : 'Tax, charges & round-off'}
+          image={require('../../../assets/dashboard-3d/sales.png')}
+          loading={isLoading || isPlaceholderData}
+          onPress={() => navigation.navigate('NetSalesSummary')}
+        />
 
-      {reportGroups.map((group) => (
-        <View key={group.title} style={{ marginTop: 22 }}>
-          <Text style={{
-            fontFamily: fonts.bold,
-            fontSize: 11,
-            color: colors.text.muted,
-            letterSpacing: 0.8,
-            textTransform: 'uppercase',
-            marginBottom: 12,
-            paddingHorizontal: 4
-          }}>
-            {group.title}
-          </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-            {group.items.map((item, idx) => (
-              <AppCard
-                key={idx}
-                onPress={() => navigation.navigate(item.screen)}
-                style={{
-                  flex: 1,
-                  minWidth: 140,
-                  maxWidth: '48%',
-                  backgroundColor: colors.surface.card,
-                  padding: 12,
-                }}
-              >
-                <View
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 12,
-                    backgroundColor: item.color,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: 12,
-                  }}
-                >
-                  <Icon name={item.icon} size={20} color={item.iconColor} />
-                </View>
-                <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: colors.text.base }}>
-                  {item.title}
-                </Text>
-              </AppCard>
-            ))}
-          </View>
+        <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+          {[
+            { label: 'Orders', value: hasCurrentData ? String(totals.totalOrders) : '—' },
+            { label: 'Guests', value: hasCurrentData ? String(totals.pax) : '—' },
+          ].map((metric) => (
+            <View key={metric.label} style={{ flex: 1, minWidth: 0 }}>
+              <OwnerSummaryMetric label={metric.label} value={isLoading || isPlaceholderData ? '…' : metric.value} />
+            </View>
+          ))}
         </View>
-      ))}
 
-      <View style={{ height: 120 }} />
+        <Text style={{ fontFamily: fonts.bold, fontSize: 19, color: colors.text.base, marginTop: 28, marginBottom: 10, letterSpacing: -0.35 }}>Frequent reports</Text>
+
+        {quickReports.map((report, index) => (
+          <MotiView key={report.screen} from={{ opacity: 0.82, translateY: 8 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 240, delay: index * 45 }}>
+            <AppCard style={{ padding: 0, marginTop: 8, overflow: 'hidden' }}>
+              <Pressable
+                onPress={() => navigation.navigate(report.screen)}
+                accessibilityRole="button"
+                accessibilityLabel={`Open ${report.title}`}
+                style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', minHeight: 72, paddingHorizontal: 16, backgroundColor: pressed ? colors.surface.raised : colors.surface.card })}
+              >
+                <Image source={report.image} resizeMode="contain" style={{ width: 48, height: 48, marginRight: 12 }} />
+                <Text style={{ flex: 1, fontFamily: fonts.bold, fontSize: 15, color: colors.text.base }}>{report.title}</Text>
+                <Icon name="arrow-up-right" size={18} color={colors.text.muted} />
+              </Pressable>
+            </AppCard>
+          </MotiView>
+        ))}
+
+        <Text style={{ fontFamily: fonts.bold, fontSize: 19, color: colors.text.base, marginTop: 28, marginBottom: 10, letterSpacing: -0.35 }}>More reports</Text>
+
+        {reportGroups.map((group, groupIndex) => (
+          <MotiView key={group.title} from={{ opacity: 0.82, translateY: 8 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 240, delay: groupIndex * 45 }}>
+          <AppCard style={{ padding: 0, marginTop: 10, overflow: 'hidden' }}>
+            <Pressable
+              onPress={() => setExpandedGroup((current) => current === group.title ? null : group.title)}
+              accessibilityRole="button"
+              accessibilityLabel={`${group.title}, ${group.items.length} reports`}
+              accessibilityState={{ expanded: expandedGroup === group.title }}
+              style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', minHeight: 72, paddingHorizontal: 16, backgroundColor: pressed ? colors.surface.raised : colors.surface.card })}
+            >
+              <Image source={group.image} resizeMode="contain" style={{ width: 48, height: 48, marginRight: 12 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontFamily: fonts.bold, fontSize: 15, color: colors.text.base }}>{group.title}</Text>
+                <Text style={{ fontFamily: fonts.medium, fontSize: 11, color: colors.text.muted, marginTop: 3 }}>{group.items.length} reports</Text>
+              </View>
+              <Icon name={expandedGroup === group.title ? 'chevron-down' : 'chevron-right'} size={18} color={colors.text.muted} />
+            </Pressable>
+            <AnimatePresence>
+              {expandedGroup === group.title && group.items.map((item, index) => (
+                <MotiView
+                  key={item.screen}
+                  from={{ opacity: 0.7, translateY: -4 }}
+                  animate={{ opacity: 1, translateY: 0 }}
+                  exit={{ opacity: 0, translateY: -4 }}
+                  transition={{ type: 'timing', duration: 180, delay: index * 20 }}
+                >
+                  <Pressable
+                    onPress={() => navigation.navigate(item.screen)}
+                    accessibilityRole="button"
+                    style={({ pressed }) => ({
+                      minHeight: 55, flexDirection: 'row', alignItems: 'center',
+                      paddingHorizontal: 18, paddingVertical: 10,
+                      borderTopWidth: 1, borderTopColor: colors.surface.borderSoft,
+                      backgroundColor: pressed ? colors.surface.raised : colors.surface.card,
+                    })}
+                  >
+                    <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.text.base, flex: 1 }}>{item.title}</Text>
+                    <Icon name="chevron-right" size={17} color={colors.text.faint} />
+                  </Pressable>
+                </MotiView>
+              ))}
+            </AnimatePresence>
+          </AppCard>
+          </MotiView>
+        ))}
+      </ScreenEntrance>
+
+      <View style={{ height: 24 }} />
+      </View>
     </ScreenWrapper>
   );
 }

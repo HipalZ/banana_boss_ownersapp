@@ -79,7 +79,7 @@ export function BillWiseReportScreen() {
         data={flatData}
         isLoading={isLoading}
         totals={data?.totals}
-        totalCount={data?.pagination?.total}
+        totalCount={data?.pagination?.totalRecords}
         metrics={[
           { label: 'Bills', count: true, icon: 'file-text' },
           { label: 'Subtotal', fields: ['subtotal'], totalsKey: 'subtotal', format: 'currency', icon: 'dollar-sign' },

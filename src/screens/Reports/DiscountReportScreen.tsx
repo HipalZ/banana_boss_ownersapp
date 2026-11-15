@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ReportsStackParamList } from '@/types/navigation';
@@ -6,14 +6,16 @@ import { useOutlet } from '@/hooks/useOutlet';
 import { useAppStore } from '@/stores/appStore';
 import { useDiscountReport } from '@/queries/reports';
 import { ScreenWrapper, TopBar } from '@/components/layout';
-import { DateRangePicker, ReportTable, ReportSummary } from '@/components/shared';
+import { DateRangePicker, ReportTable, ReportSummary, PaginationBar } from '@/components/shared';
 
 export function DiscountReportScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<ReportsStackParamList>>();
   const { outletId } = useOutlet();
   const dateRange = useAppStore((s) => s.reportsDateRange);
   const setDateRange = useAppStore((s) => s.setReportsDateRange);
-  const { data, isLoading, isError, refetch } = useDiscountReport(outletId, dateRange.from, dateRange.to);
+  const [page, setPage] = useState(1);
+  React.useEffect(() => setPage(1), [outletId]);
+  const { data, isLoading, isError, refetch } = useDiscountReport(outletId, dateRange.from, dateRange.to, page);
 
   const columns = useMemo(() => [
     'Discount', 'Scope', 'Affected Items', 'Rule', 'Invoice', 'Bill Date & Time', 'Table', 'Qty',
@@ -60,7 +62,7 @@ export function DiscountReportScreen() {
       `${summary.reasonCount || 0} reasons`, `${summary.staffCount || 0} staff`, ''];
   }, [data, rows.length]);
 
-  const handleDateChange = useCallback((r: any) => setDateRange(r), [setDateRange]);
+  const handleDateChange = useCallback((r: any) => { setDateRange(r); setPage(1); }, [setDateRange]);
 
   return (
     <ScreenWrapper scrollable refreshControl onRefresh={refetch}>
@@ -69,14 +71,17 @@ export function DiscountReportScreen() {
       <ReportSummary
         data={data?.data}
         isLoading={isLoading}
+        totals={data?.totals}
+        totalCount={data?.pagination?.totalRecords}
         metrics={[
           { label: 'Applications', fields: ['discountAmount'], count: true, icon: 'percent' },
-          { label: 'Original Value', fields: ['originalAmount'], format: 'currency', icon: 'hash' },
-          { label: 'Total Given', fields: ['discountAmount'], format: 'currency', icon: 'trending-down', tone: 'danger' },
+          { label: 'Original Value', fields: ['originalAmount'], totalsKey: 'originalAmount', format: 'currency', icon: 'hash' },
+          { label: 'Total Given', fields: ['discountAmount'], totalsKey: 'discountAmount', format: 'currency', icon: 'trending-down', tone: 'danger' },
         ]}
-        chart={{ title: 'Top discounts', labelFields: ['discountName'], valueFields: ['discountAmount'], format: 'currency' }}
+        chart={{ title: 'Top discounts (this page)', labelFields: ['discountName'], valueFields: ['discountAmount'], format: 'currency' }}
       />
       <ReportTable columns={columns} rows={rows} rowDetails={rowDetails} totalRow={totalRow} isLoading={isLoading} isError={isError} onRetry={refetch} downloadReportId="discount" outletId={outletId} from={dateRange.from} to={dateRange.to} />
+      {data?.pagination && <PaginationBar pagination={data.pagination} onPageChange={setPage} />}
     </ScreenWrapper>
   );
 }

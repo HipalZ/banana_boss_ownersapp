@@ -1,212 +1,107 @@
-import React from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Alert,
-  ScrollView,
-  Platform,
-} from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import type { SettingsStackParamList } from "@/types/navigation";
-import { useAuth } from "@/hooks/useAuth";
-import { useOutlet } from "@/hooks/useOutlet";
-import Icon from "react-native-vector-icons/Feather";
-import { colors, fonts } from "@/theme";
+import React from 'react';
+import { Alert, Platform, Text, TouchableOpacity, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import Icon from 'react-native-vector-icons/Feather';
+import type { SettingsStackParamList } from '@/types/navigation';
+import { useAuth } from '@/hooks/useAuth';
+import { usePwaInstall } from '@/hooks/usePwaInstall';
+import { useOutlet } from '@/hooks/useOutlet';
+import { ScreenWrapper, TopBar } from '@/components/layout';
+import { ScreenEntrance } from '@/components/shared';
+import { useThemeStore, type ThemeMode } from '@/stores/themeStore';
+import { colors, fonts, radii } from '@/theme';
 
 export function SettingsOverviewScreen() {
-  const navigation =
-    useNavigation<NativeStackNavigationProp<SettingsStackParamList>>();
-  const { logout, staff } = useAuth();
-  const { currentOutlet, outlets } = useOutlet();
+  const navigation = useNavigation<NativeStackNavigationProp<SettingsStackParamList>>();
+  const { logout, staff, isAdmin } = useAuth();
+  const { canInstall, install } = usePwaInstall();
+  const { outletId, currentOutlet, outlets } = useOutlet();
+  const themeMode = useThemeStore((state) => state.mode);
+  const toggleThemeMode = useThemeStore((state) => state.toggleMode);
+  const me = outletId ? staff?.find((person) => person.outletId === outletId) : staff?.[0];
+  const canSwitch = (outlets?.length ?? 0) > 1;
+  const ownerName = me?.name?.trim() || me?.nickName?.trim() || (isAdmin ? 'Administrator' : 'Staff');
 
-  const me = staff?.[0];
-  const outletCount = outlets?.length ?? 0;
-  const canSwitch = outletCount > 1;
+  const selectTheme = (mode: ThemeMode) => {
+    if (mode !== themeMode) toggleThemeMode();
+  };
 
   const handleLogout = () => {
-    if (Platform.OS === "web") {
-      if (window.confirm("Log out of Banana Boss?")) logout();
+    if (Platform.OS === 'web') {
+      if (window.confirm('Log out of Banana Boss?')) logout();
       return;
     }
-    Alert.alert(
-      "Log out",
-      "Log out of Banana Boss? You can sign back in with any business.",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Log out", style: "destructive", onPress: logout },
-      ],
-      { cancelable: true },
-    );
+    Alert.alert('Log out', 'Log out of Banana Boss? You can sign back in with any business.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Log out', style: 'destructive', onPress: logout },
+    ]);
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.surface.canvas }}>
-      {/* ── Header ─────────────────────────────────────────────────── */}
-      <View
-        style={{
-          backgroundColor: colors.primaryDark,
-          paddingHorizontal: 20,
-          paddingTop: 56,
-          paddingBottom: 26,
-          borderBottomLeftRadius: 20,
-          borderBottomRightRadius: 20,
-        }}
-      >
-        <View
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: 16,
-            backgroundColor: colors.primary,
-            alignItems: "center",
-            justifyContent: "center",
-            marginBottom: 12,
-          }}
-        >
-          <Text
-            style={{
-              fontFamily: fonts.bold,
-              fontSize: 24,
-              color: colors.text.onAccent,
-            }}
-          >
-            {(me?.name || me?.nickName || "U")[0].toUpperCase()}
-          </Text>
+    <ScreenWrapper scrollable>
+      <TopBar title={currentOutlet?.name || 'Account'} showBack={false} />
+      <ScreenEntrance style={{ width: '100%', maxWidth: 720, alignSelf: 'center', paddingBottom: 24 }}>
+        <Text style={{ fontFamily: fonts.bold, fontSize: 28, color: colors.text.base, marginTop: 10, marginBottom: 16, letterSpacing: -0.4 }}>Account</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', padding: 18, borderRadius: radii.tile, backgroundColor: colors.surface.card, borderWidth: 1, borderColor: colors.surface.border }}>
+          <View style={{ width: 52, height: 52, borderRadius: radii.tile, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
+            <Text style={{ fontFamily: fonts.extrabold, fontSize: 22, color: colors.onPrimary }}>{ownerName[0].toUpperCase()}</Text>
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text numberOfLines={2} style={{ fontFamily: fonts.bold, fontSize: 17, lineHeight: 22, color: colors.text.base }}>{ownerName}</Text>
+            <Text numberOfLines={1} style={{ fontFamily: fonts.medium, fontSize: 12, color: colors.text.muted, marginTop: 4 }}>
+              {[me?.roleName, me?.phone].filter(Boolean).join(' · ') || 'Account'}
+            </Text>
+          </View>
         </View>
-        <Text
-          style={{
-            fontFamily: fonts.bold,
-            fontSize: 20,
-            color: colors.onPrimary,
-          }}
-        >
-          {me?.name || me?.nickName || "Staff"}
-        </Text>
-        <Text
-          style={{
-            fontFamily: fonts.regular,
-            fontSize: 12,
-            color: colors.text.faint,
-            marginTop: 2,
-          }}
-        >
-          {[me?.roleName, me?.phone].filter(Boolean).join("  ·  ") || "Account"}
-        </Text>
-      </View>
 
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* ── Business / Outlet ──────────────────────────────────── */}
-        <Text style={sectionLabel}>Business</Text>
-
+        <Text style={{ fontFamily: fonts.bold, fontSize: 18, color: colors.text.base, marginTop: 28, marginBottom: 12 }}>Business</Text>
         <TouchableOpacity
-          onPress={() => canSwitch && navigation.navigate("OutletSelector")}
-          activeOpacity={canSwitch ? 0.7 : 1}
+          accessibilityRole="button"
+          accessibilityLabel={canSwitch ? 'Switch business' : 'Current business'}
           disabled={!canSwitch}
-          style={cardRow}
+          activeOpacity={canSwitch ? 0.75 : 1}
+          onPress={() => navigation.navigate('OutletSelector')}
+          style={{ flexDirection: 'row', alignItems: 'center', padding: 16, minHeight: 72, borderRadius: radii.tile, backgroundColor: colors.surface.card, borderWidth: 1, borderColor: colors.surface.border }}
         >
-          <View style={[iconTile, { backgroundColor: colors.tint.amber.bg }]}>
-            <Icon name="home" size={18} color={colors.tint.amber.fg} />
+          <View style={{ width: 42, height: 42, borderRadius: radii.tile, backgroundColor: colors.surface.raised, borderWidth: 1, borderColor: colors.surface.border, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+            <Icon name="home" size={17} color={colors.text.base} />
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={cardTitle}>
-              {currentOutlet?.name || "Current business"}
-            </Text>
-            <Text style={cardSubtitle}>
-              {canSwitch
-                ? `Tap to switch · ${outletCount} businesses`
-                : "Your only business"}
-            </Text>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text numberOfLines={2} style={{ fontFamily: fonts.bold, fontSize: 15, lineHeight: 20, color: colors.text.base }}>{currentOutlet?.name || 'Current business'}</Text>
+            <Text style={{ fontFamily: fonts.medium, fontSize: 11, color: colors.text.muted, marginTop: 3 }}>{canSwitch ? `${outlets?.length} businesses · tap to switch` : 'Current outlet'}</Text>
           </View>
-          {canSwitch && (
-            <View style={switchPill}>
-              <Icon name="repeat" size={13} color={colors.text.onAccent} />
-              <Text style={switchPillText}>Switch</Text>
-            </View>
-          )}
+          {canSwitch && <Icon name="chevron-right" size={18} color={colors.text.muted} />}
         </TouchableOpacity>
 
-        {/* ── Account ────────────────────────────────────────────── */}
-        <Text style={[sectionLabel, { marginTop: 24 }]}>Account</Text>
+        <Text style={{ fontFamily: fonts.bold, fontSize: 18, color: colors.text.base, marginTop: 28, marginBottom: 12 }}>Appearance</Text>
+        <View style={{ padding: 5, flexDirection: 'row', borderRadius: radii.tile, backgroundColor: colors.surface.card, borderWidth: 1, borderColor: colors.surface.border }}>
+          {(['light', 'dark'] as const).map((mode) => {
+            const selected = themeMode === mode;
+            return (
+              <TouchableOpacity key={mode} accessibilityRole="button" accessibilityState={{ selected }} onPress={() => selectTheme(mode)} style={{ flex: 1, minHeight: 42, borderRadius: radii.chip, alignItems: 'center', justifyContent: 'center', backgroundColor: selected ? colors.primary : 'transparent' }}>
+                <Text style={{ fontFamily: selected ? fonts.bold : fonts.medium, fontSize: 14, color: selected ? colors.onPrimary : colors.text.secondary }}>{mode === 'light' ? 'Light' : 'Dark'}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.text.muted, marginTop: 8 }}>Saved on this device</Text>
 
-        <TouchableOpacity
-          onPress={handleLogout}
-          style={cardRow}
-          activeOpacity={0.75}
-        >
-          <View style={[iconTile, { backgroundColor: colors.tint.rose.bg }]}>
-            <Icon name="log-out" size={18} color={colors.danger} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[cardTitle, { color: colors.danger }]}>Log out</Text>
-            <Text style={cardSubtitle}>Sign in again with any business</Text>
-            <Text style={cardSubtitle}>V 1.0</Text>
-          </View>
-          <Icon name="chevron-right" size={20} color={colors.text.faint} />
+        {canInstall && (
+          <TouchableOpacity accessibilityRole="button" onPress={install} style={{ flexDirection: 'row', alignItems: 'center', marginTop: 28, padding: 16, minHeight: 58, borderRadius: radii.tile, backgroundColor: colors.surface.card, borderWidth: 1, borderColor: colors.surface.border }}>
+            <Icon name="download" size={17} color={colors.text.base} />
+            <Text style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.text.base, marginLeft: 12, flex: 1 }}>Install app</Text>
+            <Icon name="chevron-right" size={18} color={colors.text.muted} />
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity accessibilityRole="button" onPress={handleLogout} style={{ flexDirection: 'row', alignItems: 'center', marginTop: 36, padding: 16, minHeight: 58, borderRadius: radii.tile, backgroundColor: colors.surface.card, borderWidth: 1, borderColor: colors.surface.border }}>
+          <Icon name="log-out" size={17} color={colors.danger} />
+          <Text style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.danger, marginLeft: 12, flex: 1 }}>Log out</Text>
+          <Icon name="chevron-right" size={18} color={colors.text.muted} />
         </TouchableOpacity>
-      </ScrollView>
-    </View>
+        <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.text.faint, textAlign: 'center', marginTop: 20 }}>Version 1.0</Text>
+      </ScreenEntrance>
+    </ScreenWrapper>
   );
 }
-
-const sectionLabel: import("react-native").TextStyle = {
-  fontSize: 11,
-  fontFamily: fonts.bold,
-  color: colors.text.muted,
-  letterSpacing: 0.6,
-  textTransform: "uppercase",
-  marginBottom: 10,
-};
-
-const cardRow: import("react-native").ViewStyle = {
-  flexDirection: "row",
-  alignItems: "center",
-  backgroundColor: colors.surface.card,
-  borderRadius: 14,
-  padding: 14,
-  borderWidth: 1,
-  borderColor: colors.surface.border,
-};
-
-const iconTile: import("react-native").ViewStyle = {
-  width: 40,
-  height: 40,
-  borderRadius: 12,
-  alignItems: "center",
-  justifyContent: "center",
-  marginRight: 14,
-};
-
-const cardTitle: import("react-native").TextStyle = {
-  fontSize: 14,
-  fontFamily: fonts.bold,
-  color: colors.text.base,
-};
-
-const cardSubtitle: import("react-native").TextStyle = {
-  fontSize: 12,
-  fontFamily: fonts.regular,
-  color: colors.text.muted,
-  marginTop: 2,
-};
-
-const switchPill: import("react-native").ViewStyle = {
-  flexDirection: "row",
-  alignItems: "center",
-  gap: 4,
-  backgroundColor: colors.primary,
-  paddingHorizontal: 10,
-  paddingVertical: 6,
-  borderRadius: 999,
-};
-
-const switchPillText: import("react-native").TextStyle = {
-  fontSize: 12,
-  fontFamily: fonts.bold,
-  color: colors.text.onAccent,
-};

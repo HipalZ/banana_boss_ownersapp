@@ -36,26 +36,26 @@ export const queryKeys = {
       ['reports', 'bill-wise', outletId, from, to, page] as const,
     item: (outletId: string | null, from: number, to: number, page: number) =>
       ['reports', 'item', outletId, from, to, page] as const,
-    category: (outletId: string | null, from: number, to: number) =>
-      ['reports', 'category', outletId, from, to] as const,
-    parentCategory: (outletId: string | null, from: number, to: number) =>
-      ['reports', 'parent-category', outletId, from, to] as const,
-    addon: (outletId: string | null, from: number, to: number) =>
-      ['reports', 'addon', outletId, from, to] as const,
-    itemType: (outletId: string | null, from: number, to: number) =>
-      ['reports', 'item-type', outletId, from, to] as const,
-    itemVariant: (outletId: string | null, from: number, to: number) =>
-      ['reports', 'item-variant', outletId, from, to] as const,
-    area: (outletId: string | null, from: number, to: number) =>
-      ['reports', 'area', outletId, from, to] as const,
-    areaItem: (outletId: string | null, from: number, to: number) =>
-      ['reports', 'area-item', outletId, from, to] as const,
-    discount: (outletId: string | null, from: number, to: number) =>
-      ['reports', 'discount', outletId, from, to] as const,
+      category: (outletId: string | null, from: number, to: number, page: number) =>
+        ['reports', 'category', outletId, from, to, page] as const,
+      parentCategory: (outletId: string | null, from: number, to: number, page: number) =>
+        ['reports', 'parent-category', outletId, from, to, page] as const,
+      addon: (outletId: string | null, from: number, to: number, page: number) =>
+        ['reports', 'addon', outletId, from, to, page] as const,
+      itemType: (outletId: string | null, from: number, to: number, page: number) =>
+        ['reports', 'item-type', outletId, from, to, page] as const,
+      itemVariant: (outletId: string | null, from: number, to: number, page: number) =>
+        ['reports', 'item-variant', outletId, from, to, page] as const,
+      area: (outletId: string | null, from: number, to: number, page: number) =>
+        ['reports', 'area', outletId, from, to, page] as const,
+      areaItem: (outletId: string | null, from: number, to: number, page: number) =>
+        ['reports', 'area-item', outletId, from, to, page] as const,
+      discount: (outletId: string | null, from: number, to: number, page: number) =>
+        ['reports', 'discount', outletId, from, to, page] as const,
     serviceCharge: (outletId: string | null, from: number, to: number, page: number) =>
       ['reports', 'service-charge', outletId, from, to, page] as const,
-    table: (outletId: string | null, from: number, to: number) =>
-      ['reports', 'table', outletId, from, to] as const,
+      table: (outletId: string | null, from: number, to: number, page: number) =>
+        ['reports', 'table', outletId, from, to, page] as const,
     deletedKot: (outletId: string | null, from: number, to: number, page: number) =>
       ['reports', 'deleted-kot', outletId, from, to, page] as const,
     transferKot: (outletId: string | null, from: number, to: number, page: number) =>

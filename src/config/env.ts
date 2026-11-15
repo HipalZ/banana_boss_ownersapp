@@ -1,6 +1,10 @@
+const webHost = typeof window !== 'undefined' ? window.location.hostname : '';
 const isLocalWeb =
-  typeof window !== 'undefined' &&
-  ['localhost', '127.0.0.1'].includes(window.location.hostname);
+  webHost === 'localhost' ||
+  webHost === '127.0.0.1' ||
+  /^192\.168\.\d{1,3}\.\d{1,3}$/.test(webHost) ||
+  /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(webHost) ||
+  /^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(webHost);
 
 const pick = (...values: Array<string | undefined>): string | undefined =>
   values.find((value) => typeof value === 'string' && value.trim().length > 0);
@@ -8,6 +12,7 @@ const pick = (...values: Array<string | undefined>): string | undefined =>
 const localApiBaseUrl = pick(
   process.env.EXPO_PUBLIC_DEV_API_BASE_URL,
   process.env.EXPO_PUBLIC_LOCAL_API_BASE_URL,
+  isLocalWeb ? `http://${webHost}:4500` : undefined,
   process.env.EXPO_PUBLIC_API_BASE_URL,
   process.env['API_BASE_URL'],
   'http://localhost:4500',

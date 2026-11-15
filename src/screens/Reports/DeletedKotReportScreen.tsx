@@ -43,7 +43,7 @@ export function DeletedKotReportScreen() {
       <ReportSummary
         data={data?.data}
         isLoading={isLoading}
-        totalCount={data?.pagination?.total}
+        totalCount={data?.pagination?.totalRecords}
         metrics={[
           { label: 'Deleted KOTs', count: true, icon: 'trash-2', tone: 'danger' },
           { label: 'Amount Lost', fields: ['amount'], format: 'currency', icon: 'alert-circle', tone: 'danger' },

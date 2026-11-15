@@ -44,7 +44,7 @@ export function OpenItemSalesScreen() {
         data={data?.data}
         isLoading={isLoading}
         totals={data?.totals}
-        totalCount={data?.pagination?.total}
+        totalCount={data?.pagination?.totalRecords}
         metrics={[
           { label: 'Open Items', count: true, icon: 'unlock' },
           { label: 'Qty', fields: ['quantity'], totalsKey: 'quantity', format: 'number', icon: 'package' },

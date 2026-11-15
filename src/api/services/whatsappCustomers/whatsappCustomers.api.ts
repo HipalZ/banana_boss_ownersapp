@@ -61,6 +61,9 @@ async function downloadCustomersXlsx(url: string) {
 
   const fileUri = `${FileSystem.cacheDirectory}${fallbackName}`;
   const result = await FileSystem.downloadAsync(url, fileUri, { headers: apiHeaders() });
+  if (result.status !== 200) {
+    throw new Error(`Download failed with HTTP ${result.status}.`);
+  }
   if (!(await Sharing.isAvailableAsync())) {
     throw new Error('Sharing is not available on this device.');
   }

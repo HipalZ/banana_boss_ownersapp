@@ -160,14 +160,14 @@ export const ReportSummary = React.memo(function ReportSummary({
                 animate={{ opacity: 1, translateX: 0 }}
                 transition={{ type: 'timing', duration: 320, delay: i * 50 }}
               >
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
                   <Text
-                    numberOfLines={1}
-                    style={{ flex: 1, marginRight: 8, fontFamily: fonts.medium, fontSize: 12, color: colors.text.secondary }}
+                    numberOfLines={2}
+                    style={{ flex: 1, marginRight: 10, fontFamily: fonts.medium, fontSize: 12, lineHeight: 17, color: colors.text.secondary }}
                   >
                     {b.label}
                   </Text>
-                  <Text style={{ fontFamily: fonts.bold, fontSize: 12, color: colors.text.base }}>
+                  <Text style={{ fontFamily: fonts.bold, fontSize: 12, color: colors.text.base, textAlign: 'right', flexShrink: 0 }}>
                     {fmt(b.value, chart.format)}
                   </Text>
                 </View>

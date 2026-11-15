@@ -1,16 +1,12 @@
 import { Platform, type ViewStyle } from 'react-native';
 
 /**
- * Elevation tokens — "Midnight" (CRED-inspired) dark theme.
- *
- * On a near-black canvas, depth reads through deep black drop-shadows plus the
- * hairline borders defined in colours. Shadow colour is pure black so lifts
- * feel like true elevation against the dark surface.
+ * Quiet elevation matching the customer app's rounded surface language.
  *
  *   card   — subtle lift for resting cards/rows
  *   soft   — floating panels / sheets
- *   button — pronounced lift for primary floating buttons / nav bar
- *   glow   — accent glow for hero/primary elements (CRED signature)
+ *   button — modest lift for primary floating buttons / nav bar
+ *   glow   — restrained accent lift for rare hero moments
  */
 const BLACK = '#000000';
 
@@ -19,34 +15,34 @@ export const shadows = {
 
   card: {
     shadowColor: BLACK,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 1,
   } as ViewStyle,
 
   soft: {
     shadowColor: BLACK,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.45,
-    shadowRadius: 24,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 2,
   } as ViewStyle,
 
   button: {
     shadowColor: BLACK,
-    shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: Platform.OS === 'ios' ? 0.5 : 0.55,
-    shadowRadius: 28,
-    elevation: 14,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: Platform.OS === 'ios' ? 0.13 : 0.16,
+    shadowRadius: 12,
+    elevation: 3,
   } as ViewStyle,
 
   // Accent glow — for the yellow primary button / hero moments.
   glow: {
-    shadowColor: '#FFE45C',
+    shadowColor: '#F3CE5C',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.35,
-    shadowRadius: 20,
-    elevation: 8,
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
   } as ViewStyle,
 } as const;

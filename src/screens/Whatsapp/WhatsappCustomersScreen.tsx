@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
   Linking,
   Modal,
+  Platform,
   Pressable,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
@@ -24,14 +25,15 @@ import type {
   WhatsappCustomerSort,
   WhatsappCustomerType,
 } from '@/api/services/whatsappCustomers/whatsappCustomers.types';
-import type { DateRangeValue } from '@/stores/appStore';
+import { useAppStore } from '@/stores/appStore';
 import { ScreenWrapper, TopBar } from '@/components/layout';
 import {
   DateRangePicker,
   EmptyState,
   ErrorState,
   LoadingSkeleton,
-  MetricCard,
+  ExportExcelButton,
+  ScreenEntrance,
 } from '@/components/shared';
 import { AppButton, AppCard } from '@/components/primitives';
 import { colors, fonts, radii } from '@/theme';
@@ -41,14 +43,6 @@ import {
   SUPPORT_WHATSAPP_PHONE,
 } from '@/config/support';
 import { whatsappCustomersApi } from '@/api/services/whatsappCustomers/whatsappCustomers.api';
-
-const initialDateRange = (): DateRangeValue => {
-  const from = new Date();
-  from.setHours(0, 0, 0, 0);
-  const to = new Date();
-  to.setHours(23, 59, 59, 999);
-  return { from: from.getTime(), to: to.getTime(), preset: 'today' };
-};
 
 const sortOptions: { label: string; value: WhatsappCustomerSort }[] = [
   { label: 'Recently active', value: 'RECENT' },
@@ -68,10 +62,12 @@ const phoneDigits = (value: string) => value.replace(/\D/g, '');
 export function WhatsappCustomersScreen() {
   const { outletId, currentOutlet } = useOutlet();
   const isScreenFocused = useIsFocused();
-  const [dateRange, setDateRange] = useState<DateRangeValue>(initialDateRange);
+  const dateRange = useAppStore((s) => s.whatsappDateRange);
+  const setDateRange = useAppStore((s) => s.setWhatsappDateRange);
   const [draftSearch, setDraftSearch] = useState('');
   const [search, setSearch] = useState('');
   const [searchError, setSearchError] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
   const [page, setPage] = useState(1);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [customerType, setCustomerType] = useState<WhatsappCustomerType>('ALL');
@@ -115,6 +111,17 @@ export function WhatsappCustomersScreen() {
   const data = customersQuery.data;
   const activeFilterCount =
     (customerType !== 'ALL' ? 1 : 0) + (tableName ? 1 : 0) + (sort !== 'RECENT' ? 1 : 0);
+  const hasActiveSearchOrFilters = Boolean(search || activeFilterCount);
+
+  const clearSearchAndFilters = () => {
+    setDraftSearch('');
+    setSearch('');
+    setSearchError('');
+    setCustomerType('ALL');
+    setTableName('');
+    setSort('RECENT');
+    setPage(1);
+  };
 
   const submitSearch = () => {
     const value = draftSearch.trim();
@@ -188,51 +195,40 @@ export function WhatsappCustomersScreen() {
 
   const renderCustomer = ({ item }: { item: WhatsappCustomer }) => {
     const digits = phoneDigits(item.phone);
+    const canContact = digits.length >= 10 && digits.length <= 15;
     const isNew = item.customerType === 'NEW';
+    const name = item.name?.trim() || 'Guest';
     return (
       <AppCard style={{ marginBottom: 12, padding: 16 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-          <View
-            style={{
-              width: 46,
-              height: 46,
-              borderRadius: radii.tile,
-              backgroundColor: colors.tint.green.bg,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: 12,
-            }}
-          >
-            <Text style={{ fontFamily: fonts.extrabold, fontSize: 14, color: colors.tint.green.fg }}>
-              {(item.name || 'WC').slice(0, 2).toUpperCase()}
-            </Text>
-          </View>
-
-          <View style={{ flex: 1, minWidth: 0 }}>
+        <View>
             <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
               <Text
                 numberOfLines={2}
                 style={{ flex: 1, minWidth: 0, fontFamily: fonts.bold, fontSize: 15, lineHeight: 20, color: colors.text.base }}
               >
-                {item.name}
+                {name}
               </Text>
               <TouchableOpacity
-                accessibilityLabel={`WhatsApp ${item.name}`}
+                accessibilityRole="button"
+                accessibilityLabel={`WhatsApp ${name}`}
+                disabled={!canContact}
                 onPress={() => void openUrl(`https://wa.me/${digits}`, 'WhatsApp could not be opened for this customer.')}
-                style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: radii.chip, backgroundColor: colors.tint.green.bg, borderWidth: 1, borderColor: colors.surface.border }}
+                style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: radii.chip, backgroundColor: colors.tint.green.bg, borderWidth: 1, borderColor: colors.surface.border, opacity: canContact ? 1 : 0.4 }}
               >
                 <FontAwesomeIcon name="whatsapp" size={17} color={colors.tint.green.fg} />
               </TouchableOpacity>
               <TouchableOpacity
-                accessibilityLabel={`Call ${item.name}`}
+                accessibilityRole="button"
+                accessibilityLabel={`Call ${name}`}
+                disabled={!canContact}
                 onPress={() => void openUrl(`tel:${item.phone}`, 'Calling is unavailable on this device.')}
-                style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: radii.chip, backgroundColor: colors.surface.raised, borderWidth: 1, borderColor: colors.surface.border }}
+                style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: radii.chip, backgroundColor: colors.surface.raised, borderWidth: 1, borderColor: colors.surface.border, opacity: canContact ? 1 : 0.4 }}
               >
                 <Icon name="phone" size={16} color={colors.text.muted} />
               </TouchableOpacity>
             </View>
-            <Text style={{ fontFamily: fonts.medium, fontSize: 13, color: colors.text.secondary, marginTop: 3 }}>
-              {item.phone}
+            <Text numberOfLines={1} style={{ fontFamily: fonts.medium, fontSize: 13, color: colors.text.secondary, marginTop: 3 }}>
+              {item.phone || 'No phone recorded'}
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 5, marginTop: 8 }}>
               <View style={{ borderRadius: radii.full, paddingHorizontal: 8, paddingVertical: 3, backgroundColor: isNew ? colors.tint.sky.bg : colors.tint.violet.bg }}>
@@ -248,7 +244,6 @@ export function WhatsappCustomersScreen() {
             <Text style={{ fontFamily: fonts.medium, fontSize: 11, color: colors.text.muted, marginTop: 2 }}>
               Last active {formatDateTime(item.lastSeenAt)}
             </Text>
-          </View>
         </View>
       </AppCard>
     );
@@ -257,7 +252,7 @@ export function WhatsappCustomersScreen() {
   if (integrationQuery.isLoading) {
     return (
       <ScreenWrapper>
-        <TopBar title="WhatsApp Customers" subtitle="Customer activity from WhatsApp QR scans" />
+        <TopBar title="WhatsApp Customers" subtitle="Customer activity from WhatsApp QR scans" showBack={false} />
         <LoadingSkeleton type="card-grid" count={4} />
       </ScreenWrapper>
     );
@@ -266,7 +261,7 @@ export function WhatsappCustomersScreen() {
   if (integrationQuery.isError) {
     return (
       <ScreenWrapper>
-        <TopBar title="WhatsApp Customers" subtitle="Customer activity from WhatsApp QR scans" />
+        <TopBar title="WhatsApp Customers" subtitle="Customer activity from WhatsApp QR scans" showBack={false} />
         <ErrorState
           title="WhatsApp connection unavailable"
           subtitle="We could not verify this outlet's WhatsApp connection."
@@ -279,7 +274,7 @@ export function WhatsappCustomersScreen() {
   if (!integrationActive) {
     return (
       <ScreenWrapper scrollable>
-        <TopBar title="WhatsApp Customers" subtitle="Customer activity from WhatsApp QR scans" />
+        <TopBar title="WhatsApp Customers" subtitle="Customer activity from WhatsApp QR scans" showBack={false} />
         <AppCard style={{ marginTop: 20, padding: 24 }}>
           <Text style={{ fontFamily: fonts.extrabold, fontSize: 22, color: colors.text.base }}>
             Know your WhatsApp customers
@@ -318,15 +313,9 @@ export function WhatsappCustomersScreen() {
   }
 
   const listHeader = (
-    <View>
-      <View
-        style={{
-          marginVertical: 8,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 6,
-        }}
-      >
+    <ScreenEntrance>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 10, marginBottom: 16 }}>
+        <Text numberOfLines={1} style={{ flex: 1, fontFamily: fonts.bold, fontSize: 28, letterSpacing: -0.4, color: colors.text.base }}>WhatsApp</Text>
         <DateRangePicker
           compact
           value={dateRange}
@@ -335,58 +324,9 @@ export function WhatsappCustomersScreen() {
             setPage(1);
           }}
           outletId={outletId}
-          dark
         />
 
-        <TouchableOpacity
-          onPress={openFilters}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 5,
-            paddingHorizontal: 9,
-            paddingVertical: 8,
-            borderRadius: radii.chip,
-            backgroundColor: colors.surface.raised,
-            borderWidth: 1,
-            borderColor: colors.surface.border,
-          }}
-        >
-          <Icon name="sliders" size={14} color={colors.text.secondary} />
-          <Text style={{ fontFamily: fonts.semibold, fontSize: 11, color: activeFilterCount ? colors.primaryDark : colors.text.secondary }}>
-            Filters
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          accessibilityLabel="Download customers Excel"
-          onPress={() => void downloadCustomers()}
-          disabled={isDownloading || customersQuery.isLoading}
-          style={{
-            minHeight: 40,
-            flex: 1,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 5,
-            paddingHorizontal: 6,
-            borderRadius: radii.chip,
-            backgroundColor: colors.tint.green.bg,
-            borderWidth: 1,
-            borderColor: colors.tint.green.fg,
-            opacity: isDownloading || customersQuery.isLoading ? 0.55 : 1,
-          }}
-        >
-          {isDownloading ? (
-            <ActivityIndicator size="small" color={colors.tint.green.fg} />
-          ) : (
-            <Icon name="download" size={14} color={colors.tint.green.fg} />
-          )}
-          <Text numberOfLines={1} style={{ fontFamily: fonts.semibold, fontSize: 11, color: colors.tint.green.fg }}>
-            {isDownloading ? 'Preparing' : 'Download Excel'}
-          </Text>
-        </TouchableOpacity>
       </View>
-
       <View style={{ flexDirection: 'row', gap: 8, alignItems: 'stretch' }}>
         <View
           style={{
@@ -396,13 +336,15 @@ export function WhatsappCustomersScreen() {
             backgroundColor: colors.surface.raised,
             borderRadius: radii.tile,
             borderWidth: 1,
-            borderColor: searchError ? colors.danger : colors.surface.border,
+            borderColor: searchError ? colors.danger : searchFocused ? colors.primaryDark : colors.surface.border,
             paddingHorizontal: 12,
           }}
         >
           <Icon name="search" size={17} color={colors.text.faint} />
           <TextInput
             value={draftSearch}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
             onChangeText={(value) => {
               setDraftSearch(value);
               if (searchError) setSearchError('');
@@ -413,6 +355,10 @@ export function WhatsappCustomersScreen() {
             placeholderTextColor={colors.text.faint}
             style={{
               flex: 1,
+              minWidth: 0,
+              borderWidth: 0,
+              backgroundColor: 'transparent',
+              ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : {}),
               color: colors.text.base,
               fontFamily: fonts.medium,
               fontSize: 12,
@@ -445,17 +391,49 @@ export function WhatsappCustomersScreen() {
         </Text>
       ) : null}
 
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 10 }}>
+        <TouchableOpacity
+          onPress={openFilters}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 5,
+            paddingHorizontal: 9,
+            paddingVertical: 8,
+            borderRadius: radii.chip,
+            backgroundColor: colors.surface.raised,
+            borderWidth: 1,
+            borderColor: colors.surface.border,
+          }}
+        >
+          <Icon name="sliders" size={14} color={colors.text.secondary} />
+          <Text style={{ fontFamily: fonts.semibold, fontSize: 11, color: activeFilterCount ? colors.primaryDark : colors.text.secondary }}>
+            Filters
+          </Text>
+        </TouchableOpacity>
+        <ExportExcelButton
+          accessibilityLabel="Download customers Excel"
+          onPress={() => void downloadCustomers()}
+          loading={isDownloading}
+          disabled={customersQuery.isLoading}
+        />
+      </View>
       {data ? (
-        <View style={{ marginTop: 14, gap: 8 }}>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            <MetricCard compact title="Customers" value={String(data.summary.totalCustomers)} icon="users" />
-            <MetricCard compact title="QR scans" value={String(data.summary.totalScans)} icon="maximize" />
+        <AppCard style={{ marginTop: 16, paddingVertical: 16, paddingHorizontal: 8 }}>
+          <View style={{ flexDirection: 'row' }}>
+            {[
+              ['Customers', data.summary.totalCustomers],
+              ['QR scans', data.summary.totalScans],
+              ['New', data.summary.newCustomers],
+              ['Returning', data.summary.returningCustomers],
+            ].map(([label, value], index) => (
+              <View key={label} style={{ flex: 1, minWidth: 0, alignItems: 'center', borderLeftWidth: index ? 1 : 0, borderLeftColor: colors.surface.border }}>
+                <Text numberOfLines={1} adjustsFontSizeToFit style={{ fontFamily: fonts.extrabold, fontSize: 19, color: colors.text.base }}>{value}</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit style={{ fontFamily: fonts.medium, fontSize: 10, color: colors.text.muted, marginTop: 4 }}>{label}</Text>
+              </View>
+            ))}
           </View>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            <MetricCard compact title="New" value={String(data.summary.newCustomers)} icon="user-plus" />
-            <MetricCard compact title="Returning" value={String(data.summary.returningCustomers)} icon="repeat" />
-          </View>
-        </View>
+        </AppCard>
       ) : null}
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 24, marginBottom: 10 }}>
@@ -466,12 +444,12 @@ export function WhatsappCustomersScreen() {
           </Text>
         ) : null}
       </View>
-    </View>
+    </ScreenEntrance>
   );
 
   return (
     <ScreenWrapper>
-      <TopBar title="WhatsApp Customers" subtitle={currentOutlet?.name || 'Customer activity'} />
+      <TopBar title={currentOutlet?.name || 'Banana Boss'} showBack={false} />
       {customersQuery.isError ? (
         <ErrorState
           title="Could not load customers"
@@ -490,8 +468,9 @@ export function WhatsappCustomersScreen() {
             ) : (
               <EmptyState
                 icon="message-circle"
-                title="No WhatsApp customers found"
-                subtitle="Try another billing period, search or filter."
+                title={hasActiveSearchOrFilters ? 'No matching customers' : 'No WhatsApp customers yet'}
+                subtitle={hasActiveSearchOrFilters ? 'Try another search, filter or billing period.' : 'Customer activity will appear here after WhatsApp QR scans.'}
+                action={hasActiveSearchOrFilters ? { label: 'Clear search and filters', onPress: clearSearchAndFilters } : undefined}
               />
             )
           }
@@ -536,9 +515,10 @@ export function WhatsappCustomersScreen() {
               backgroundColor: colors.surface.card,
               borderTopLeftRadius: radii.sheet,
               borderTopRightRadius: radii.sheet,
-              padding: 20,
+              maxHeight: '85%',
             }}
           >
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <Text style={{ fontFamily: fonts.extrabold, fontSize: 19, color: colors.text.base }}>Filter customers</Text>
               <TouchableOpacity onPress={() => setFiltersOpen(false)}>
@@ -630,6 +610,7 @@ export function WhatsappCustomersScreen() {
               />
               <AppButton label="Apply filters" style={{ flex: 1 }} onPress={applyFilters} />
             </View>
+            </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>

@@ -48,7 +48,7 @@ export function ItemSalesReportScreen() {
         data={data?.data}
         isLoading={isLoading}
         totals={data?.totals}
-        totalCount={data?.pagination?.total}
+        totalCount={data?.pagination?.totalRecords}
         metrics={[
           { label: 'Items Sold', count: true, icon: 'shopping-bag' },
           { label: 'Qty', fields: ['quantity', 'itemCount'], totalsKey: 'quantity', format: 'number', icon: 'package' },

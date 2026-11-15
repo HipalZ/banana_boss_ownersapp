@@ -13,6 +13,7 @@ import { ScreenWrapper, TopBar } from '@/components/layout';
 import { DateRangePicker, MetricCard, LoadingSkeleton, ErrorState, SectionHeader } from '@/components/shared';
 import { reportsApi } from '@/api/services/reports/reports.api';
 import { colors, fonts, radii } from '@/theme';
+import { aggregateNetSalesTotals } from './netSalesTotals';
 
 export function NetSalesSummaryScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<ReportsStackParamList>>();
@@ -27,35 +28,7 @@ export function NetSalesSummaryScreen() {
   );
   const { format } = useCurrency();
 
-  // API returns NetSalesSummaryResponse[] — aggregate across all outlets in the array
-  const totals = useMemo(() => {
-    return (rawList as any[]).reduce(
-      (acc, r) => {
-        const s = r?.data?.summary;
-        const d = r?.data?.duesSummary;
-        if (!s) return acc;
-        return {
-          totalOrders: acc.totalOrders + (s.totalOrders ?? 0),
-          subtotal: acc.subtotal + (s.subtotal ?? 0),
-          discount: acc.discount + (s.discount ?? 0),
-          complementary: acc.complementary + (s.complementary ?? 0),
-          npc: acc.npc + (s.npc ?? 0),
-          serviceCharge: acc.serviceCharge + (s.serviceCharge ?? 0),
-          gst: acc.gst + (s.gst ?? 0),
-          tips: acc.tips + (s.tips ?? 0),
-          totalSales: acc.totalSales + (s.totalSales ?? 0),
-          netSales: acc.netSales + (s.netSales ?? 0),
-          duesTotal: acc.duesTotal + (d?.total ?? 0),
-          duesCount: acc.duesCount + (d?.count ?? 0),
-        };
-      },
-      {
-        totalOrders: 0, subtotal: 0, discount: 0, complementary: 0, npc: 0,
-        serviceCharge: 0, gst: 0, tips: 0, totalSales: 0, netSales: 0,
-        duesTotal: 0, duesCount: 0,
-      },
-    );
-  }, [rawList]);
+  const totals = useMemo(() => aggregateNetSalesTotals(rawList as any[]), [rawList]);
 
   const handleRefresh = useCallback(() => { refetch(); }, [refetch]);
   const handleDownload = useCallback(async () => {
@@ -81,8 +54,9 @@ export function NetSalesSummaryScreen() {
       { title: 'Discount', value: format(totals.discount), icon: 'percent', tone: 'danger' as const },
       { title: 'Complimentary', value: format(totals.complementary), icon: 'gift', tone: 'muted' as const },
       { title: 'GST', value: format(totals.gst), icon: 'briefcase', tone: 'default' as const },
-      { title: 'Service Charge', value: format(totals.serviceCharge), icon: 'layers', tone: 'default' as const },
+      { title: 'Service Charge', value: format(totals.serviceCharge), icon: 'bell', tone: 'default' as const },
       { title: 'Tips', value: format(totals.tips), icon: 'smile', tone: 'default' as const },
+      { title: 'Round Off', value: format(totals.roundOff), icon: 'plus-circle', tone: 'default' as const },
       { title: 'Total Sales', value: format(totals.totalSales), icon: 'dollar-sign', tone: 'success' as const },
       { title: 'Net Sales', value: format(totals.netSales), icon: 'trending-up', tone: 'success' as const },
     ],
@@ -92,8 +66,8 @@ export function NetSalesSummaryScreen() {
   return (
     <ScreenWrapper scrollable refreshControl onRefresh={handleRefresh}>
       <TopBar title="Net Sales Summary" showBack onBack={() => navigation.goBack()} />
-      <DateRangePicker value={dateRange} onChange={(r) => { setDateRange(r); }} outletId={outletId} />
-      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginTop: 4 }}>
+        <DateRangePicker value={dateRange} onChange={(r) => { setDateRange(r); }} outletId={outletId} />
         <TouchableOpacity
           activeOpacity={0.75}
           disabled={!outletId || isLoading || rawList.length === 0 || isDownloading}
@@ -160,21 +134,11 @@ export function NetSalesSummaryScreen() {
             >
               <SectionHeader title="Dues" />
               <View style={{ flexDirection: 'row', gap: 10 }}>
-                <View style={{ flex: 1, backgroundColor: colors.tint.amber.bg, borderRadius: radii.tile, padding: 16 }}>
-                  <Text style={{ fontSize: 11, fontFamily: fonts.extrabold, color: colors.tint.amber.fg, textTransform: 'uppercase', letterSpacing: 0.8 }}>
-                    Total Dues
-                  </Text>
-                  <Text style={{ fontSize: 22, fontFamily: fonts.extrabold, color: colors.tint.amber.fg, marginTop: 6 }}>
-                    {format(totals.duesTotal)}
-                  </Text>
+                <View style={{ flex: 1 }}>
+                  <MetricCard title="Total Dues" value={format(totals.duesTotal)} icon="file-text" tone="danger" />
                 </View>
-                <View style={{ flex: 1, backgroundColor: colors.surface.raised, borderRadius: radii.tile, padding: 16 }}>
-                  <Text style={{ fontSize: 11, fontFamily: fonts.extrabold, color: colors.text.secondary, textTransform: 'uppercase', letterSpacing: 0.8 }}>
-                    Dues Count
-                  </Text>
-                  <Text style={{ fontSize: 22, fontFamily: fonts.extrabold, color: colors.text.base, marginTop: 6 }}>
-                    {totals.duesCount}
-                  </Text>
+                <View style={{ flex: 1 }}>
+                  <MetricCard title="Dues Count" value={String(totals.duesCount)} icon="hash" tone="default" />
                 </View>
               </View>
             </MotiView>

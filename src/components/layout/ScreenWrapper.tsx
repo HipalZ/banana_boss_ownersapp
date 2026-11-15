@@ -1,12 +1,14 @@
 import React from 'react';
 import {
   View,
+  Image,
   ScrollView,
   RefreshControl,
   type ViewProps,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme';
+import { useThemeStore } from '@/stores/themeStore';
 import { TopBar } from './TopBar';
 
 interface ScreenWrapperProps extends ViewProps {
@@ -28,12 +30,23 @@ export const ScreenWrapper = React.memo(function ScreenWrapper({
   onRefresh,
   padding = true,
   hasTabBar = true,
-  bg = colors.surface.canvas, // premium light cream background
+  bg = colors.surface.canvas,
   header,
   style,
   ...props
 }: ScreenWrapperProps) {
   const insets = useSafeAreaInsets();
+  const themeMode = useThemeStore((s) => s.mode);
+  const showCanvasPattern = bg === colors.surface.canvas;
+  const canvasPattern = showCanvasPattern ? (
+    <Image
+      source={themeMode === 'dark'
+        ? require('../../../assets/owner-dark-dots.png')
+        : require('../../../assets/owner-light-dots.png')}
+      resizeMode="stretch"
+      style={{ position: 'absolute', width: '100%', height: '100%', opacity: themeMode === 'dark' ? 0.14 : 0.7 }}
+    />
+  ) : null;
 
   const containerStyle = {
     flex: 1,
@@ -65,7 +78,7 @@ export const ScreenWrapper = React.memo(function ScreenWrapper({
 
   // Fixed header sits outside the scroll view so it stays pinned at the top.
   const fixedHeader = pinned ? (
-    <View style={{ paddingHorizontal: padding ? 16 : 0, backgroundColor: bg }}>
+    <View style={{ paddingHorizontal: padding ? 16 : 0 }}>
       {pinned}
     </View>
   ) : null;
@@ -73,6 +86,7 @@ export const ScreenWrapper = React.memo(function ScreenWrapper({
   if (scrollable) {
     return (
       <View style={containerStyle}>
+        {canvasPattern}
         {fixedHeader}
         <ScrollView
           style={contentStyle}
@@ -93,6 +107,7 @@ export const ScreenWrapper = React.memo(function ScreenWrapper({
 
   return (
     <View style={containerStyle}>
+      {canvasPattern}
       {fixedHeader}
       <View style={[contentStyle, { paddingBottom: bottomOffset }, style]} {...props}>
         {scrollChildren}

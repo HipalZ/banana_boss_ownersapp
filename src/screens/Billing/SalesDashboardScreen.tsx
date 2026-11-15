@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, Dimensions, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { MotiView } from 'moti';
 import { useOutlet } from '@/hooks/useOutlet';
 import { useAppStore } from '@/stores/appStore';
@@ -8,14 +8,16 @@ import { useOutletDetails } from '@/queries/outlets';
 import { useCurrency } from '@/hooks/useCurrency';
 import { ScreenWrapper, TopBar } from '@/components/layout';
 import { DateRangePicker, LoadingSkeleton, ErrorState, DetailSheet, type DetailRow } from '@/components/shared';
+import { MetricIllustration } from '@/components/shared/MetricIllustration';
 import { RunningTablesSheet } from '@/components/outletAdmin/RunningTablesSheet';
 import { colors, fonts, radii, shadows } from '@/theme';
 import { getTodayRange, getBusinessDayRange } from '@/utils/date';
-import { BarChart } from 'react-native-chart-kit';
 import Icon from 'react-native-vector-icons/Feather';
 import { useIsFocused } from '@react-navigation/native';
+import { paymentModeLabel } from '@/utils/paymentModeLabel';
 
 export function SalesDashboardScreen() {
+  const s = makeStyles();
   const { outletId, currentOutlet } = useOutlet();
   const isScreenFocused = useIsFocused();
   const dateRange = useAppStore((s) => s.reportsDateRange);
@@ -73,15 +75,17 @@ export function SalesDashboardScreen() {
 
   const hasDues =
     (duesSummary?.duesGiven || 0) > 0 ||
-    (duesSummary?.duesOutstanding || 0) > 0 ||
+    (duesSummary?.duesGetBack || 0) > 0 ||
     (duesSummary?.ordersPending || 0) > 0;
 
-  const paymentModeEntries = Object.entries(paidAll?.paymentModes ?? {}) as [string, number][];
+  const paymentModeEntries = (Object.entries(paidAll?.paymentModes ?? {}) as [string, number][])
+    .filter(([, amount]) => Number(amount) > 0)
+    .sort((a, b) => Number(b[1]) - Number(a[1]));
+  const paymentModeTotal = paymentModeEntries.reduce((sum, [, amount]) => sum + Number(amount), 0);
 
   const yesterdaySales = (yesterdayData as any)?.paidAll?.totals?.netAfterDiscountAndCharges || 0;
   const todaySales = paidAll?.totals?.netAfterDiscountAndCharges || 0;
   const salesChange = yesterdaySales > 0 ? ((todaySales - yesterdaySales) / yesterdaySales) * 100 : 0;
-  const netSales = paidAll?.totals?.netAfterDiscountAndCharges || 0;
 
   // Tap-to-expand metric breakdowns (mirrors banana_boss web MetricCard sheets).
   const [detail, setDetail] = useState<{ title: string; total: number; rows: DetailRow[] } | null>(null);
@@ -188,9 +192,9 @@ export function SalesDashboardScreen() {
         <>
           {/* Revenue Overview Grid */}
           <MotiView
-            from={{ opacity: 0, translateY: 16 }}
+            from={{ opacity: 0.88, translateY: 6 }}
             animate={{ opacity: 1, translateY: 0 }}
-            transition={{ type: 'timing', duration: 500 }}
+            transition={{ type: 'timing', duration: 240 }}
             style={{ marginTop: 8 }}
           >
             {/* Premium Gold/Dark Hero Card for Net Sales */}
@@ -210,30 +214,15 @@ export function SalesDashboardScreen() {
                   Total Net Sales
                 </Text>
                 
-                {/* Live Pulse Indicator */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <MotiView
-                    from={{ scale: 0.8, opacity: 0.5 }}
-                    animate={{ scale: 1.2, opacity: 1 }}
-                    transition={{
-                      type: 'timing',
-                      duration: 1000,
-                      loop: true,
-                    }}
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: 4,
-                      backgroundColor: colors.success,
-                    }}
-                  />
-                  <View style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 }}>
-                    <Text style={{ fontFamily: fonts.bold, fontSize: 9, fontWeight: '800', color: colors.success, textTransform: 'uppercase' }}>LIVE</Text>
+                  {isToday && <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.success }} />}
+                  <View style={{ backgroundColor: isToday ? colors.tint.green.bg : colors.surface.inkRaised, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 }}>
+                    <Text style={{ fontFamily: fonts.bold, fontSize: 11, color: isToday ? colors.success : colors.text.onInkMuted, textTransform: 'uppercase' }}>{isToday ? 'Today' : 'Selected period'}</Text>
                   </View>
                 </View>
               </View>
 
-              <Text style={{ fontFamily: fonts.extrabold, fontSize: 34, color: colors.primary, letterSpacing: -0.5 }}>
+              <Text style={{ fontFamily: fonts.extrabold, fontSize: 34, color: colors.text.onInk, letterSpacing: -0.5 }}>
                 {format(todaySales)}
               </Text>
 
@@ -269,34 +258,26 @@ export function SalesDashboardScreen() {
             {/* Premium 2-Column Grid for Metrics */}
             <Text style={s.sectionLabel}>Revenue Overview</Text>
             <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
-              <View style={[s.gridCard, { borderLeftColor: colors.tint.sky.fg, borderLeftWidth: 4 }]}>
-                <View style={[s.iconBg, { backgroundColor: colors.tint.sky.bg }]}>
-                  <Icon name="shopping-bag" size={15} color={colors.tint.sky.fg} />
-                </View>
+              <View style={[s.gridCard, { borderTopColor: colors.tint.sky.fg, borderTopWidth: 2 }]}>
+                <View style={s.metricArtwork}><MetricIllustration icon="shopping-bag" /></View>
                 <Text style={s.cardLabel}>Orders</Text>
                 <Text style={s.cardValue}>{String(paidAll?.totals?.ordersCount || 0)}</Text>
               </View>
-              <View style={[s.gridCard, { borderLeftColor: colors.success, borderLeftWidth: 4 }]}>
-                <View style={[s.iconBg, { backgroundColor: colors.tint.green.bg }]}>
-                  <Icon name="users" size={15} color={colors.success} />
-                </View>
+              <View style={[s.gridCard, { borderTopColor: colors.success, borderTopWidth: 2 }]}>
+                <View style={s.metricArtwork}><MetricIllustration icon="users" /></View>
                 <Text style={s.cardLabel}>Guests</Text>
                 <Text style={s.cardValue}>{String(paidAll?.totals?.paxCount || 0)}</Text>
               </View>
             </View>
 
             <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
-              <View style={[s.gridCard, { borderLeftColor: colors.warning, borderLeftWidth: 4 }]}>
-                <View style={[s.iconBg, { backgroundColor: colors.tint.amber.bg }]}>
-                  <Icon name="check-circle" size={15} color={colors.warning} />
-                </View>
+              <View style={[s.gridCard, { borderTopColor: colors.warning, borderTopWidth: 2 }]}>
+                <View style={s.metricArtwork}><MetricIllustration icon="trending-up" /></View>
                 <Text style={s.cardLabel}>Normal Sales</Text>
                 <Text style={s.cardValue}>{format(paidNormal?.totals?.netAfterDiscountAndCharges || 0)}</Text>
               </View>
-              <View style={[s.gridCard, { borderLeftColor: colors.tint.violet.fg, borderLeftWidth: 4 }]}>
-                <View style={[s.iconBg, { backgroundColor: colors.tint.violet.bg }]}>
-                  <Icon name="refresh-cw" size={15} color={colors.tint.violet.fg} />
-                </View>
+              <View style={[s.gridCard, { borderTopColor: colors.tint.violet.fg, borderTopWidth: 2 }]}>
+                <View style={s.metricArtwork}><MetricIllustration icon="dollar-sign" /></View>
                 <Text style={s.cardLabel}>Dues Recovered</Text>
                 <Text style={s.cardValue}>{format(duesSettlements?.totals?.netAfterDiscountAndCharges || 0)}</Text>
               </View>
@@ -306,9 +287,9 @@ export function SalesDashboardScreen() {
           {/* Today vs Yesterday Graphical Comparison Card */}
           {isToday && (
             <MotiView
-              from={{ opacity: 0, translateY: 12 }}
+              from={{ opacity: 0.88, translateY: 6 }}
               animate={{ opacity: 1, translateY: 0 }}
-              transition={{ type: 'timing', duration: 400, delay: 200 }}
+              transition={{ type: 'timing', duration: 240, delay: 70 }}
               style={{ marginTop: 8, marginBottom: 20 }}
             >
               <Text style={s.sectionLabel}>Sales Comparison</Text>
@@ -363,34 +344,31 @@ export function SalesDashboardScreen() {
                     </Text>
                   </View>
                 ) : (
-                  <BarChart
-                    data={{
-                      labels: ['Yesterday', 'Today'],
-                      datasets: [
-                        {
-                          data: [yesterdaySales, todaySales],
-                        },
-                      ],
-                    }}
-                    width={Dimensions.get('window').width - 68}
-                    height={200}
-                    yAxisLabel="₹"
-                    yAxisSuffix=""
-                    chartConfig={{
-                      backgroundColor: colors.surface.card,
-                      backgroundGradientFrom: colors.surface.card,
-                      backgroundGradientTo: colors.surface.card,
-                      decimalPlaces: 0,
-                      color: (opacity = 1) => `rgba(184, 147, 90, ${opacity})`,
-                      labelColor: () => colors.text.muted,
-                      propsForBackgroundLines: { strokeDasharray: '4', stroke: colors.surface.border },
-                      barPercentage: 0.65,
-                      fillShadowGradient: colors.gold,
-                      fillShadowGradientOpacity: 1,
-                    }}
-                    style={{ borderRadius: 16, alignSelf: 'center', marginRight: 10 }}
-                    showValuesOnTopOfBars
-                  />
+                  <View style={{ gap: 18 }}>
+                    {[
+                      { label: 'Today', value: todaySales, fill: colors.primary },
+                      { label: 'Yesterday', value: yesterdaySales, fill: colors.text.faint },
+                    ].map((item) => {
+                      const largest = Math.max(todaySales, yesterdaySales);
+                      const percentage = largest > 0 ? Math.max(3, item.value / largest * 100) : 0;
+                      return (
+                        <View key={item.label}>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+                            <Text style={{ fontFamily: fonts.semibold, fontSize: 12, color: colors.text.secondary }}>{item.label}</Text>
+                            <Text style={{ fontFamily: fonts.bold, fontSize: 15, color: colors.text.base }}>{format(item.value)}</Text>
+                          </View>
+                          <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.surface.raised, overflow: 'hidden' }}>
+                            <View style={{ width: `${percentage}%`, height: '100%', borderRadius: 4, backgroundColor: item.fill }} />
+                          </View>
+                        </View>
+                      );
+                    })}
+                    {todaySales === 0 && yesterdaySales === 0 && (
+                      <Text style={{ fontFamily: fonts.medium, fontSize: 11, color: colors.text.muted }}>
+                        No sales in either billing shift yet.
+                      </Text>
+                    )}
+                  </View>
                 )}
               </View>
             </MotiView>
@@ -399,9 +377,9 @@ export function SalesDashboardScreen() {
           {/* Payment Modes Progress Share */}
           {paymentModeEntries.length > 0 && (
             <MotiView
-              from={{ opacity: 0, translateY: 12 }}
+              from={{ opacity: 0.88, translateY: 6 }}
               animate={{ opacity: 1, translateY: 0 }}
-              transition={{ type: 'timing', duration: 400, delay: 300 }}
+              transition={{ type: 'timing', duration: 240, delay: 110 }}
               style={{ marginTop: 8, marginBottom: 20 }}
             >
               <Text style={s.sectionLabel}>Payment Modes Share</Text>
@@ -414,34 +392,15 @@ export function SalesDashboardScreen() {
                 ...shadows.card,
               }}>
                 {paymentModeEntries.map(([mode, amount], i) => {
-                  const share = netSales > 0 ? (amount / netSales) * 100 : 0;
+                  const share = paymentModeTotal > 0 ? (Number(amount) / paymentModeTotal) * 100 : 0;
                   
-                  // Color codes for badges
-                  let badgeBg: string = colors.surface.raised;
-                  let badgeText: string = colors.text.muted;
-                  const formattedMode = mode.toUpperCase();
-                  
-                  if (formattedMode.includes('UPI')) {
-                    badgeBg = colors.tint.violet.bg;
-                    badgeText = colors.tint.violet.fg; // Purple
-                  } else if (formattedMode.includes('CARD')) {
-                    badgeBg = colors.tint.sky.bg;
-                    badgeText = colors.tint.sky.fg; // Blue
-                  } else if (formattedMode.includes('CASH')) {
-                    badgeBg = colors.tint.green.bg;
-                    badgeText = colors.success; // Green
-                  } else if (formattedMode.includes('SPLIT')) {
-                    badgeBg = colors.tint.amber.bg;
-                    badgeText = colors.warning; // Amber
-                  }
-
                   return (
                     <View key={mode} style={{ marginBottom: i === paymentModeEntries.length - 1 ? 0 : 16 }}>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                          <View style={{ backgroundColor: badgeBg, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
-                            <Text style={{ fontFamily: fonts.bold, fontSize: 10, fontWeight: '800', color: badgeText }}>
-                              {mode.replace('_', ' ')}
+                          <View style={{ backgroundColor: colors.surface.raised, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
+                            <Text style={{ fontFamily: fonts.bold, fontSize: 12, color: colors.text.secondary }}>
+                              {paymentModeLabel(mode)}
                             </Text>
                           </View>
                         </View>
@@ -449,13 +408,13 @@ export function SalesDashboardScreen() {
                           <Text style={{ fontFamily: fonts.extrabold, fontSize: 14, color: colors.text.base }}>
                             {format(Number(amount))}
                           </Text>
-                          <Text style={{ fontFamily: fonts.medium, fontSize: 10, color: colors.text.muted, marginTop: 1 }}>
+                          <Text style={{ fontFamily: fonts.medium, fontSize: 11, color: colors.text.muted, marginTop: 1 }}>
                             {share.toFixed(1)}% share
                           </Text>
                         </View>
                       </View>
                       <View style={{ height: 6, width: '100%', backgroundColor: colors.surface.raised, borderRadius: 3, marginTop: 8 }}>
-                        <View style={{ height: 6, width: `${Math.min(100, share)}%`, backgroundColor: badgeText, borderRadius: 3 }} />
+                        <View style={{ height: 6, width: `${Math.min(100, share)}%`, backgroundColor: colors.primary, borderRadius: 3 }} />
                       </View>
                     </View>
                   );
@@ -466,27 +425,23 @@ export function SalesDashboardScreen() {
 
           {/* Discounts & Taxes Grid */}
           <MotiView
-            from={{ opacity: 0, translateY: 12 }}
+            from={{ opacity: 0.88, translateY: 6 }}
             animate={{ opacity: 1, translateY: 0 }}
-            transition={{ type: 'timing', duration: 400, delay: 400 }}
+            transition={{ type: 'timing', duration: 240, delay: 150 }}
             style={{ marginTop: 8, marginBottom: 20 }}
           >
             <Text style={s.sectionLabel}>Discounts &amp; Taxes</Text>
             <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
-              <TouchableOpacity activeOpacity={0.8} onPress={openDiscountDetail} style={[s.gridCard, { borderLeftColor: colors.danger, borderLeftWidth: 4 }]}>
-                <View style={[s.iconBg, { backgroundColor: colors.tint.rose.bg }]}>
-                  <Icon name="percent" size={15} color={colors.danger} />
-                </View>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Discount. View breakdown" activeOpacity={0.8} onPress={openDiscountDetail} style={[s.gridCard, { borderTopColor: colors.danger, borderTopWidth: 2 }]}>
+                <View style={s.metricArtwork}><MetricIllustration icon="percent" /></View>
                 <Text style={s.cardLabel}>Discount</Text>
                 <Text style={[s.cardValue, { color: colors.danger }]}>
                   {format(discountSummary?.onPaid?.total || 0)}
                 </Text>
                 <Text style={s.tapHint}>Tap for breakdown ›</Text>
               </TouchableOpacity>
-              <TouchableOpacity activeOpacity={0.8} onPress={openTaxDetail} style={[s.gridCard, { borderLeftColor: colors.info, borderLeftWidth: 4 }]}>
-                <View style={[s.iconBg, { backgroundColor: colors.tint.sky.bg }]}>
-                  <Icon name="file-text" size={15} color={colors.info} />
-                </View>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Taxes. View breakdown" activeOpacity={0.8} onPress={openTaxDetail} style={[s.gridCard, { borderTopColor: colors.info, borderTopWidth: 2 }]}>
+                <View style={s.metricArtwork}><MetricIllustration icon="file-text" /></View>
                 <Text style={s.cardLabel}>Taxes (GST)</Text>
                 <Text style={s.cardValue}>
                   {format(taxesSummary?.onPaid?.tax || 0)}
@@ -496,20 +451,16 @@ export function SalesDashboardScreen() {
             </View>
 
             <View style={{ flexDirection: 'row', gap: 12 }}>
-              <TouchableOpacity activeOpacity={0.8} onPress={openChargesDetail} style={[s.gridCard, { borderLeftColor: colors.tint.violet.fg, borderLeftWidth: 4 }]}>
-                <View style={[s.iconBg, { backgroundColor: colors.tint.violet.bg }]}>
-                  <Icon name="briefcase" size={15} color={colors.tint.violet.fg} />
-                </View>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Service charge. View breakdown" activeOpacity={0.8} onPress={openChargesDetail} style={[s.gridCard, { borderTopColor: colors.tint.violet.fg, borderTopWidth: 2 }]}>
+                <View style={s.metricArtwork}><MetricIllustration icon="briefcase" /></View>
                 <Text style={s.cardLabel}>Service Charge</Text>
                 <Text style={s.cardValue}>
                   {format(taxesSummary?.onPaid?.serviceCharge || 0)}
                 </Text>
                 <Text style={s.tapHint}>Tap for breakdown ›</Text>
               </TouchableOpacity>
-              <TouchableOpacity activeOpacity={0.8} onPress={openTipsDetail} style={[s.gridCard, { borderLeftColor: colors.warning, borderLeftWidth: 4 }]}>
-                <View style={[s.iconBg, { backgroundColor: colors.tint.amber.bg }]}>
-                  <Icon name="smile" size={15} color={colors.warning} />
-                </View>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Tips. View breakdown" activeOpacity={0.8} onPress={openTipsDetail} style={[s.gridCard, { borderTopColor: colors.warning, borderTopWidth: 2 }]}>
+                <View style={s.metricArtwork}><MetricIllustration icon="smile" /></View>
                 <Text style={s.cardLabel}>Tips</Text>
                 <Text style={s.cardValue}>
                   {format(taxesSummary?.onPaid?.tip || 0)}
@@ -522,27 +473,24 @@ export function SalesDashboardScreen() {
           {/* Dues Position */}
           {hasDues && (
             <MotiView
-              from={{ opacity: 0, translateY: 12 }}
+              from={{ opacity: 0.88, translateY: 6 }}
               animate={{ opacity: 1, translateY: 0 }}
-              transition={{ type: 'timing', duration: 400, delay: 500 }}
+              transition={{ type: 'timing', duration: 240, delay: 190 }}
               style={{ marginTop: 8, marginBottom: 20 }}
             >
-              <Text style={s.sectionLabel}>Dues Position</Text>
+              <Text style={s.sectionLabel}>Dues this period</Text>
+              <Text style={{ fontFamily: fonts.medium, fontSize: 12, color: colors.text.muted, marginBottom: 10 }}>Net change = dues given minus dues recovered</Text>
               <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
-                <View style={[s.gridCard, { borderLeftColor: colors.danger, borderLeftWidth: 4 }]}>
-                  <View style={[s.iconBg, { backgroundColor: colors.tint.rose.bg }]}>
-                    <Icon name="arrow-up-circle" size={15} color={colors.danger} />
-                  </View>
+                <View style={[s.gridCard, { borderTopColor: colors.danger, borderTopWidth: 2 }]}>
+                  <View style={s.metricArtwork}><MetricIllustration icon="trending-down" /></View>
                   <Text style={s.cardLabel}>Dues Given</Text>
                   <Text style={[s.cardValue, { color: colors.danger }]}>
                     {format(duesSummary?.duesGiven || 0)}
                   </Text>
                 </View>
-                <View style={[s.gridCard, { borderLeftColor: colors.danger, borderLeftWidth: 4 }]}>
-                  <View style={[s.iconBg, { backgroundColor: colors.tint.rose.bg }]}>
-                    <Icon name="alert-circle" size={15} color={colors.danger} />
-                  </View>
-                  <Text style={s.cardLabel}>Outstanding</Text>
+                <View style={[s.gridCard, { borderTopColor: colors.danger, borderTopWidth: 2 }]}>
+                  <View style={s.metricArtwork}><MetricIllustration icon="alert-circle" /></View>
+                  <Text style={s.cardLabel}>Net dues change</Text>
                   <Text style={[s.cardValue, { color: colors.danger }]}>
                     {format(duesSummary?.duesOutstanding || 0)}
                   </Text>
@@ -550,19 +498,15 @@ export function SalesDashboardScreen() {
               </View>
 
               <View style={{ flexDirection: 'row', gap: 12 }}>
-                <View style={[s.gridCard, { borderLeftColor: colors.text.muted, borderLeftWidth: 4 }]}>
-                  <View style={[s.iconBg, { backgroundColor: colors.surface.raised }]}>
-                    <Icon name="clock" size={15} color={colors.text.muted} />
-                  </View>
+                <View style={[s.gridCard, { borderTopColor: colors.text.muted, borderTopWidth: 2 }]}>
+                  <View style={s.metricArtwork}><MetricIllustration icon="bell" /></View>
                   <Text style={s.cardLabel}>Pending Orders</Text>
                   <Text style={s.cardValue}>
                     {String(duesSummary?.ordersPending || 0)}
                   </Text>
                 </View>
-                <View style={[s.gridCard, { borderLeftColor: colors.success, borderLeftWidth: 4 }]}>
-                  <View style={[s.iconBg, { backgroundColor: colors.tint.green.bg }]}>
-                    <Icon name="arrow-down-circle" size={15} color={colors.success} />
-                  </View>
+                <View style={[s.gridCard, { borderTopColor: colors.success, borderTopWidth: 2 }]}>
+                  <View style={s.metricArtwork}><MetricIllustration icon="dollar-sign" /></View>
                   <Text style={s.cardLabel}>Get Back</Text>
                   <Text style={[s.cardValue, { color: colors.success }]}>
                     {format(duesSummary?.duesGetBack || 0)}
@@ -579,9 +523,9 @@ export function SalesDashboardScreen() {
             </View>
           ) : liveTables.length > 0 && (
             <MotiView
-              from={{ opacity: 0, translateY: 12 }}
+              from={{ opacity: 0.88, translateY: 6 }}
               animate={{ opacity: 1, translateY: 0 }}
-              transition={{ type: 'timing', duration: 400, delay: 600 }}
+              transition={{ type: 'timing', duration: 240, delay: 230 }}
               style={{ marginTop: 8, marginBottom: 20 }}
             >
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -614,7 +558,7 @@ export function SalesDashboardScreen() {
                     <Text style={{ fontFamily: fonts.bold, fontSize: 15, fontWeight: '900', color: colors.tint.amber.fg }}>
                       {format(t.tableCurrentAmount)}
                     </Text>
-                    <Text style={{ fontFamily: fonts.medium, fontSize: 9, color: colors.text.muted, marginTop: 4 }}>
+                    <Text style={{ fontFamily: fonts.medium, fontSize: 11, color: colors.text.muted, marginTop: 4 }}>
                       View KOTs ›
                     </Text>
                   </TouchableOpacity>
@@ -644,7 +588,7 @@ export function SalesDashboardScreen() {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = () => StyleSheet.create({
   sectionLabel: {
     fontFamily: fonts.bold,
     fontSize: 12,
@@ -663,23 +607,22 @@ const s = StyleSheet.create({
     borderColor: colors.surface.border,
     ...shadows.card,
   },
-  iconBg: {
-    width: 32,
-    height: 32,
-    borderRadius: radii.chip,
-    alignItems: 'center',
+  metricArtwork: {
+    width: 40,
+    height: 36,
+    alignItems: 'flex-start',
     justifyContent: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   tapHint: {
     fontFamily: fonts.medium,
-    fontSize: 10,
+    fontSize: 11,
     color: colors.text.faint,
     marginTop: 6,
   },
   cardLabel: {
     fontFamily: fonts.bold,
-    fontSize: 10,
+    fontSize: 11,
     color: colors.text.muted,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.5,

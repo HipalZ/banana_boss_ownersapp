@@ -1,19 +1,19 @@
 /**
- * Typeface — Poppins (the HiPalz brand typeface).
+ * Typeface — Plus Jakarta Sans, shared with the customer app.
  *
  * Weights loaded in App.tsx: 400 / 500 / 600 / 700 / 800.
  * Components reference these named families rather than relying on
  * `fontWeight`, so glyph weight is consistent across web + native.
  */
 export const fonts = {
-  regular: 'Poppins_400Regular',
-  medium: 'Poppins_500Medium',
-  semibold: 'Poppins_600SemiBold',
-  bold: 'Poppins_700Bold',
-  extrabold: 'Poppins_800ExtraBold',
+  regular: 'PlusJakartaSans_400Regular',
+  medium: 'PlusJakartaSans_500Medium',
+  semibold: 'PlusJakartaSans_600SemiBold',
+  bold: 'PlusJakartaSans_700Bold',
+  extrabold: 'PlusJakartaSans_800ExtraBold',
 } as const;
 
-/** Pick the closest loaded Poppins family for a numeric/string fontWeight. */
+/** Pick the closest loaded family for a numeric/string fontWeight. */
 export function fontForWeight(weight?: string | number) {
   const numeric = typeof weight === 'number' ? weight : Number(weight || 400);
 

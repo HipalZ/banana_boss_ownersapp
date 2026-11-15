@@ -3,12 +3,13 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { SettingsStackParamList } from '@/types/navigation';
 import { SettingsOverviewScreen } from '@/screens/Settings/SettingsOverviewScreen';
 import { OutletSelectorScreen } from '@/screens/Settings/OutletSelectorScreen';
+import { colors } from '@/theme';
 
 const Stack = createNativeStackNavigator<SettingsStackParamList>();
 
 const screenOptions = {
   headerShown: false,
-  contentStyle: { backgroundColor: '#FAF9F6' },
+  contentStyle: { backgroundColor: colors.surface.canvas },
   animation: 'slide_from_right' as const,
 };
 

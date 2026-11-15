@@ -20,12 +20,13 @@ import { TransferKotReportScreen } from '@/screens/Reports/TransferKotReportScre
 import { TransferTableReportScreen } from '@/screens/Reports/TransferTableReportScreen';
 import { OutstandingDuesScreen } from '@/screens/Reports/OutstandingDuesScreen';
 import { OpenItemSalesScreen } from '@/screens/Reports/OpenItemSalesScreen';
+import { colors } from '@/theme';
 
 const Stack = createNativeStackNavigator<ReportsStackParamList>();
 
 const screenOptions = {
   headerShown: false,
-  contentStyle: { backgroundColor: '#FAF9F6' },
+  contentStyle: { backgroundColor: colors.surface.canvas },
   animation: 'slide_from_right' as const,
 };
 

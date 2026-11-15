@@ -42,7 +42,7 @@ export function TransferKotReportScreen() {
       <ReportSummary
         data={data?.data}
         isLoading={isLoading}
-        totalCount={data?.pagination?.total}
+        totalCount={data?.pagination?.totalRecords}
         metrics={[
           { label: 'KOT Transfers', count: true, icon: 'shuffle', tone: 'muted' },
         ]}

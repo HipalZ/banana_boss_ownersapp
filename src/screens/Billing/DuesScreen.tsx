@@ -7,7 +7,8 @@ import { useOutlet } from '@/hooks/useOutlet';
 import { useDuesUsersQuery, useCreateDuesUserMutation } from '@/queries/duesUser';
 import { useCurrency } from '@/hooks/useCurrency';
 import { ScreenWrapper, TopBar } from '@/components/layout';
-import { AppCard } from '@/components/primitives/AppCard';
+import { BillingActionButton } from './BillingActionButton';
+import { BillingAccountRow } from './BillingAccountRow';
 import { AppButton } from '@/components/primitives/AppButton';
 import { AppInput } from '@/components/primitives/AppInput';
 import { LoadingSkeleton, EmptyState, ErrorState } from '@/components/shared';
@@ -53,91 +54,26 @@ export function DuesScreen() {
 
   return (
     <ScreenWrapper>
-      <TopBar 
-        title="Dues Ledger" 
-        showBack 
-        onBack={() => navigation.goBack()} 
-        rightActions={
-          <TouchableOpacity 
-            onPress={() => setModalVisible(true)}
-            style={{
-              backgroundColor: colors.primaryDark,
-              paddingHorizontal: 12,
-              paddingVertical: 8,
-              borderRadius: radii.chip,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 4,
-            }}
-            activeOpacity={0.8}
-          >
-            <Icon name="plus" size={14} color={colors.onPrimary} />
-            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: colors.onPrimary }}>Add User</Text>
-          </TouchableOpacity>
-        }
-      />
+      <TopBar title="Dues Ledger" showBack onBack={() => navigation.goBack()} rightActions={<BillingActionButton label="Add profile" onPress={() => setModalVisible(true)} />} />
 
-      <View style={{ marginVertical: 8, paddingHorizontal: 4 }}>
-        <Text style={{ fontSize: 13, fontFamily: fonts.semibold, color: colors.text.muted }}>
-          Outstanding Balances
-        </Text>
+      <View style={{ marginTop: 16, marginBottom: 12, paddingHorizontal: 4 }}>
+        <Text style={{ fontSize: 18, fontFamily: fonts.bold, color: colors.text.base }}>Outstanding balances</Text>
+        <Text style={{ fontSize: 12, fontFamily: fonts.medium, color: colors.text.muted, marginTop: 3 }}>{data?.length ?? 0} customer profiles</Text>
       </View>
 
-      {isLoading && <LoadingSkeleton type="card-grid" count={6} />}
-      {isError && <ErrorState onRetry={refetch} />}
-
-      <FlatList
+      {isLoading ? <LoadingSkeleton type="bill-row" count={6} /> : isError ? <ErrorState onRetry={refetch} /> : <FlatList
         data={data || []}
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => {
           const displayName = item.userName || item.name || 'Unknown User';
           const displayPhone = item.userPhone || item.phone || 'No Phone';
 
-          return (
-          <AppCard style={{ marginBottom: 10, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface.card }}>
-            <View style={{
-              width: 44,
-              height: 44,
-              borderRadius: radii.tile,
-              backgroundColor: colors.surface.raised,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderWidth: 1,
-              borderColor: colors.surface.border,
-            }}>
-              <Text style={{ fontSize: 14, fontFamily: fonts.extrabold, color: colors.text.secondary }}>
-                {displayName.substring(0, 2).toUpperCase()}
-              </Text>
-            </View>
-            <View style={{ flex: 1, marginLeft: 14 }}>
-              <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: colors.text.base }}>{displayName}</Text>
-              <Text style={{ fontSize: 12, fontFamily: fonts.medium, color: colors.text.muted, marginTop: 3 }}>{displayPhone}</Text>
-            </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={{ fontSize: 16, fontFamily: fonts.extrabold, color: item.currentDuesAmount > 0 ? colors.danger : colors.success }}>
-                {format(item.currentDuesAmount)}
-              </Text>
-              <View style={{
-                marginTop: 4,
-                backgroundColor: item.status ? colors.tint.green.bg : colors.surface.raised,
-                paddingHorizontal: 8,
-                paddingVertical: 2,
-                borderRadius: radii.chip,
-                borderWidth: 1,
-                borderColor: item.status ? colors.tint.green.fg : colors.surface.border,
-              }}>
-                <Text style={{ fontSize: 9, fontFamily: fonts.bold, color: item.status ? colors.success : colors.text.muted }}>
-                  {item.status ? 'ACTIVE' : 'INACTIVE'}
-                </Text>
-              </View>
-            </View>
-          </AppCard>
-          );
+          return <BillingAccountRow name={displayName} phone={displayPhone} detail={format(item.currentDuesAmount)} detailLabel="Balance" detailColor={item.currentDuesAmount > 0 ? colors.danger : colors.success} badge={item.status ? 'ACTIVE' : 'INACTIVE'} badgeActive={item.status} />;
         }}
         ListEmptyComponent={<EmptyState title="No Dues Accounts" subtitle="Add customer profiles to manage outstanding dues." />}
         contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
-      />
+      />}
 
       {/* Add Dues User Modal */}
       <Modal

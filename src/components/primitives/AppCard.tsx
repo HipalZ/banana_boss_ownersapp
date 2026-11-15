@@ -43,7 +43,7 @@ export const AppCard = React.memo(function AppCard({
 
   if (onPress) {
     return (
-      <TouchableOpacity activeOpacity={0.9} onPress={onPress}>
+      <TouchableOpacity accessibilityRole="button" activeOpacity={0.9} onPress={onPress}>
         {content}
       </TouchableOpacity>
     );

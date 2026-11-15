@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ReportsStackParamList } from '@/types/navigation';
@@ -6,14 +6,16 @@ import { useOutlet } from '@/hooks/useOutlet';
 import { useAppStore } from '@/stores/appStore';
 import { useItemVariantReport } from '@/queries/reports';
 import { ScreenWrapper, TopBar } from '@/components/layout';
-import { DateRangePicker, ReportTable, ReportSummary } from '@/components/shared';
+import { DateRangePicker, ReportTable, ReportSummary, PaginationBar } from '@/components/shared';
 
 export function ItemVariantReportScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<ReportsStackParamList>>();
   const { outletId } = useOutlet();
   const dateRange = useAppStore((s) => s.reportsDateRange);
   const setDateRange = useAppStore((s) => s.setReportsDateRange);
-  const { data, isLoading, isError, refetch } = useItemVariantReport(outletId, dateRange.from, dateRange.to);
+  const [page, setPage] = useState(1);
+  React.useEffect(() => setPage(1), [outletId]);
+  const { data, isLoading, isError, refetch } = useItemVariantReport(outletId, dateRange.from, dateRange.to, page);
 
   const columns = useMemo(() => ['Item', 'Variant', 'Addons', 'Qty', 'Gross', 'Tax', 'Total'], []);
 
@@ -31,25 +33,37 @@ export function ItemVariantReportScreen() {
     [data],
   );
 
-  const handleDateChange = useCallback((r: any) => setDateRange(r), [setDateRange]);
+  const summaryRows = useMemo(
+    () => (data?.data ?? []).map((row: any) => ({
+      ...row,
+      chartLabel: [row.itemName, row.variantName && row.variantName !== 'BASE' ? row.variantName : null]
+        .filter(Boolean).join(' · ') || 'Unnamed item',
+    })),
+    [data],
+  );
+
+  const handleDateChange = useCallback((r: any) => { setDateRange(r); setPage(1); }, [setDateRange]);
 
   return (
     <ScreenWrapper scrollable refreshControl onRefresh={refetch}>
       <TopBar title="Item Variant Report" showBack onBack={() => navigation.goBack()} />
       <DateRangePicker value={dateRange} onChange={handleDateChange} outletId={outletId} />
       <ReportSummary
-        data={data?.data}
+        data={summaryRows}
         isLoading={isLoading}
+        totals={data?.totals}
+        totalCount={data?.pagination?.totalRecords}
         metrics={[
           { label: 'Variants', count: true, icon: 'list' },
-          { label: 'Qty Sold', fields: ['quantity'], format: 'number', icon: 'package' },
-          { label: 'Gross', fields: ['gross', 'grossAmount'], format: 'currency', icon: 'dollar-sign', tone: 'success' },
-          { label: 'Tax', fields: ['tax', 'gst'], format: 'currency', icon: 'briefcase' },
-          { label: 'Net Total', fields: ['total'], format: 'currency', icon: 'trending-up', tone: 'success' },
+          { label: 'Qty Sold', fields: ['quantity'], totalsKey: 'quantity', format: 'number', icon: 'package' },
+          { label: 'Gross', fields: ['gross', 'grossAmount'], totalsKey: 'grossAmount', format: 'currency', icon: 'dollar-sign', tone: 'success' },
+          { label: 'Tax', fields: ['tax', 'gst'], totalsKey: 'tax', format: 'currency', icon: 'briefcase' },
+          { label: 'Net Total', fields: ['total'], totalsKey: 'netSales', format: 'currency', icon: 'trending-up', tone: 'success' },
         ]}
-        chart={{ title: 'Top variants', labelFields: ['variantName', 'itemName'], valueFields: ['total'], format: 'currency' }}
+        chart={{ title: 'Top variants (this page)', labelFields: ['chartLabel'], valueFields: ['total'], format: 'currency' }}
       />
       <ReportTable columns={columns} rows={rows} isLoading={isLoading} isError={isError} onRetry={refetch} downloadReportId="item-variant" outletId={outletId} from={dateRange.from} to={dateRange.to} />
+      {data?.pagination && <PaginationBar pagination={data.pagination} onPageChange={setPage} />}
     </ScreenWrapper>
   );
 }
