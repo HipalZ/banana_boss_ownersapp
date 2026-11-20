@@ -17,6 +17,7 @@ interface ScreenWrapperProps extends ViewProps {
   refreshControl?: boolean;
   onRefresh?: () => void;
   padding?: boolean;
+  horizontalPadding?: number;
   hasTabBar?: boolean;
   bg?: string;
   /** Fixed header (e.g. <TopBar/>) pinned above the scroll area. */
@@ -29,6 +30,7 @@ export const ScreenWrapper = React.memo(function ScreenWrapper({
   refreshControl,
   onRefresh,
   padding = true,
+  horizontalPadding = 16,
   hasTabBar = true,
   bg = colors.surface.canvas,
   header,
@@ -56,7 +58,7 @@ export const ScreenWrapper = React.memo(function ScreenWrapper({
 
   const contentStyle = {
     flex: 1,
-    paddingHorizontal: padding ? 16 : 0,
+    paddingHorizontal: padding ? horizontalPadding : 0,
   };
 
   const bottomOffset = hasTabBar ? (insets.bottom + 96) : (insets.bottom + 16);
@@ -78,7 +80,7 @@ export const ScreenWrapper = React.memo(function ScreenWrapper({
 
   // Fixed header sits outside the scroll view so it stays pinned at the top.
   const fixedHeader = pinned ? (
-    <View style={{ paddingHorizontal: padding ? 16 : 0 }}>
+    <View style={{ paddingHorizontal: padding ? horizontalPadding : 0 }}>
       {pinned}
     </View>
   ) : null;

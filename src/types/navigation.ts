@@ -22,6 +22,7 @@ export type ReportsStackParamList = {
 
 export type BillingStackParamList = {
   BillingOverview: undefined;
+  RunningTables: undefined;
   SalesDashboard: undefined;
   BillsList: undefined;
   BillDetail: { billId: string };

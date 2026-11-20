@@ -4,6 +4,7 @@ import Animated, { ReduceMotion, useAnimatedStyle, useSharedValue, withSpring } 
 import Icon from 'react-native-vector-icons/Feather';
 import { colors, fonts, radii, shadows } from '@/theme';
 import { useThemeStore } from '@/stores/themeStore';
+import { AdaptiveValueText } from './AdaptiveValueText';
 
 interface OwnerDashboardHeroProps {
   eyebrow?: string;
@@ -51,9 +52,12 @@ export function OwnerDashboardHero({ eyebrow, title, value, detail, image, loadi
         {loading ? (
           <ActivityIndicator color={colors.gold} style={{ alignSelf: 'flex-start', marginTop: 12 }} />
         ) : (
-          <Text numberOfLines={1} adjustsFontSizeToFit style={{ fontFamily: fonts.extrabold, fontSize: 31, lineHeight: 39, letterSpacing: -1.1, color: colors.text.base, marginTop: 3 }}>
-            {value ?? '—'}
-          </Text>
+          <AdaptiveValueText
+            value={value ?? '—'}
+            baseFontSize={31}
+            minimumFontSize={20}
+            style={{ width: '100%', fontFamily: fonts.extrabold, lineHeight: 39, letterSpacing: -1.1, color: colors.text.base, marginTop: 3 }}
+          />
         )}
       </View>
 

@@ -64,7 +64,7 @@ export function NetSalesSummaryScreen() {
   );
 
   return (
-    <ScreenWrapper scrollable refreshControl onRefresh={handleRefresh}>
+    <ScreenWrapper scrollable refreshControl onRefresh={handleRefresh} horizontalPadding={8}>
       <TopBar title="Net Sales Summary" showBack onBack={() => navigation.goBack()} />
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginTop: 4 }}>
         <DateRangePicker value={dateRange} onChange={(r) => { setDateRange(r); }} outletId={outletId} />

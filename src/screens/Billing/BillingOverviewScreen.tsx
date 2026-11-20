@@ -22,6 +22,7 @@ type Nav = NativeStackNavigationProp<BillingStackParamList>;
 
 const navItems = [
   { title: 'Bills', subtitle: 'All bills & invoices', image: require('../../../assets/dashboard-3d/billing.png'), screen: 'BillsList' as const },
+  { title: 'Running tables', subtitle: 'Live tables & KOTs', image: require('../../../assets/dashboard-3d/running-tables.png'), screen: 'RunningTables' as const },
   { title: 'Payment modes', subtitle: 'Manage payments', image: require('../../../assets/dashboard-3d/sales.png'), screen: 'PaymentModes' as const },
   { title: 'Dues ledger', subtitle: 'Outstanding amounts', image: require('../../../assets/dashboard-3d/operations.png'), screen: 'Dues' as const },
   { title: 'NPC accounts', subtitle: 'Non-paying registry', image: require('../../../assets/dashboard-3d/accounts.png'), screen: 'Npc' as const },

@@ -34,7 +34,8 @@ export const MetricCard = React.memo(function MetricCard({
   const cardStyle = {
     backgroundColor: colors.surface.card,
     borderRadius: radii.card,
-    padding: compact ? 11 : 13,
+    paddingVertical: compact ? 11 : 13,
+    paddingHorizontal: compact ? 8 : 9,
     flex: 1,
     minWidth: 0,
     borderWidth: 1,
