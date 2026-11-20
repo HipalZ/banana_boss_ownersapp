@@ -6,6 +6,7 @@ import React from 'react';
 import { View, Text, Modal, Pressable, ScrollView } from 'react-native';
 import { colors, fonts, radii } from '@/theme';
 import { formatINR } from '@/utils/currency';
+import { AdaptiveValueText } from './AdaptiveValueText';
 
 export interface DetailRow {
   label: string;
@@ -78,9 +79,12 @@ export function DetailSheet({ visible, onClose, title, total, rows }: DetailShee
                 <Text style={{ fontFamily: fonts.medium, fontSize: 12, color: colors.text.muted, textTransform: 'uppercase', letterSpacing: 1 }}>
                   Total
                 </Text>
-                <Text style={{ fontFamily: fonts.extrabold, fontSize: 28, color: colors.text.base, marginTop: 4 }}>
-                  {formatINR(total)}
-                </Text>
+                <AdaptiveValueText
+                  value={formatINR(total)}
+                  baseFontSize={28}
+                  minimumFontSize={20}
+                  style={{ maxWidth: '100%', fontFamily: fonts.extrabold, color: colors.text.base, marginTop: 4 }}
+                />
               </View>
             )}
 
@@ -105,10 +109,14 @@ export function DetailSheet({ visible, onClose, title, total, rows }: DetailShee
                     <Text style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.text.secondary }}>
                       {r.label}
                     </Text>
-                    <Text
+                    <AdaptiveValueText
+                      value={formatINR(r.value)}
+                      baseFontSize={15}
+                      minimumFontSize={12}
                       style={{
+                        maxWidth: '55%',
                         fontFamily: fonts.bold,
-                        fontSize: 15,
+                        textAlign: 'right',
                         color:
                           r.direction === 'negative'
                             ? colors.danger
@@ -116,9 +124,7 @@ export function DetailSheet({ visible, onClose, title, total, rows }: DetailShee
                               ? colors.success
                               : colors.text.base,
                       }}
-                    >
-                      {formatINR(r.value)}
-                    </Text>
+                    />
                   </View>
                 ))
               )}

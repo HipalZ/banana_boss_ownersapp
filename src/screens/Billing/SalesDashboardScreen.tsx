@@ -7,7 +7,7 @@ import { useBillsDashboardQuery, useRunningTablesQuery } from '@/queries/bills';
 import { useOutletDetails } from '@/queries/outlets';
 import { useCurrency } from '@/hooks/useCurrency';
 import { ScreenWrapper, TopBar } from '@/components/layout';
-import { DateRangePicker, LoadingSkeleton, ErrorState, DetailSheet, type DetailRow } from '@/components/shared';
+import { AdaptiveValueText, DateRangePicker, LoadingSkeleton, ErrorState, DetailSheet, type DetailRow } from '@/components/shared';
 import { MetricIllustration } from '@/components/shared/MetricIllustration';
 import { RunningTablesSheet } from '@/components/outletAdmin/RunningTablesSheet';
 import { colors, fonts, radii, shadows } from '@/theme';
@@ -222,9 +222,12 @@ export function SalesDashboardScreen() {
                 </View>
               </View>
 
-              <Text style={{ fontFamily: fonts.extrabold, fontSize: 34, color: colors.text.onInk, letterSpacing: -0.5 }}>
-                {format(todaySales)}
-              </Text>
+              <AdaptiveValueText
+                value={format(todaySales)}
+                baseFontSize={34}
+                minimumFontSize={24}
+                style={{ width: '100%', fontFamily: fonts.extrabold, color: colors.text.onInk, letterSpacing: -0.5 }}
+              />
 
               {/* Quick comparison mini badge on Hero Card */}
               {isToday && yesterdaySales > 0 && (
@@ -274,12 +277,12 @@ export function SalesDashboardScreen() {
               <View style={[s.gridCard, { borderTopColor: colors.warning, borderTopWidth: 2 }]}>
                 <View style={s.metricArtwork}><MetricIllustration icon="trending-up" /></View>
                 <Text style={s.cardLabel}>Normal Sales</Text>
-                <Text style={s.cardValue}>{format(paidNormal?.totals?.netAfterDiscountAndCharges || 0)}</Text>
+                <AdaptiveValueText value={format(paidNormal?.totals?.netAfterDiscountAndCharges || 0)} baseFontSize={17} minimumFontSize={13} style={s.cardValue} />
               </View>
               <View style={[s.gridCard, { borderTopColor: colors.tint.violet.fg, borderTopWidth: 2 }]}>
                 <View style={s.metricArtwork}><MetricIllustration icon="dollar-sign" /></View>
                 <Text style={s.cardLabel}>Dues Recovered</Text>
-                <Text style={s.cardValue}>{format(duesSettlements?.totals?.netAfterDiscountAndCharges || 0)}</Text>
+                <AdaptiveValueText value={format(duesSettlements?.totals?.netAfterDiscountAndCharges || 0)} baseFontSize={17} minimumFontSize={13} style={s.cardValue} />
               </View>
             </View>
           </MotiView>
@@ -355,7 +358,7 @@ export function SalesDashboardScreen() {
                         <View key={item.label}>
                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
                             <Text style={{ fontFamily: fonts.semibold, fontSize: 12, color: colors.text.secondary }}>{item.label}</Text>
-                            <Text style={{ fontFamily: fonts.bold, fontSize: 15, color: colors.text.base }}>{format(item.value)}</Text>
+                            <AdaptiveValueText value={format(item.value)} baseFontSize={15} minimumFontSize={12} style={{ maxWidth: '65%', fontFamily: fonts.bold, color: colors.text.base, textAlign: 'right' }} />
                           </View>
                           <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.surface.raised, overflow: 'hidden' }}>
                             <View style={{ width: `${percentage}%`, height: '100%', borderRadius: 4, backgroundColor: item.fill }} />
@@ -405,9 +408,7 @@ export function SalesDashboardScreen() {
                           </View>
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
-                          <Text style={{ fontFamily: fonts.extrabold, fontSize: 14, color: colors.text.base }}>
-                            {format(Number(amount))}
-                          </Text>
+                          <AdaptiveValueText value={format(Number(amount))} baseFontSize={14} minimumFontSize={11} style={{ maxWidth: 150, fontFamily: fonts.extrabold, color: colors.text.base, textAlign: 'right' }} />
                           <Text style={{ fontFamily: fonts.medium, fontSize: 11, color: colors.text.muted, marginTop: 1 }}>
                             {share.toFixed(1)}% share
                           </Text>
@@ -435,17 +436,13 @@ export function SalesDashboardScreen() {
               <TouchableOpacity accessibilityRole="button" accessibilityLabel="Discount. View breakdown" activeOpacity={0.8} onPress={openDiscountDetail} style={[s.gridCard, { borderTopColor: colors.danger, borderTopWidth: 2 }]}>
                 <View style={s.metricArtwork}><MetricIllustration icon="percent" /></View>
                 <Text style={s.cardLabel}>Discount</Text>
-                <Text style={[s.cardValue, { color: colors.danger }]}>
-                  {format(discountSummary?.onPaid?.total || 0)}
-                </Text>
+                <AdaptiveValueText value={format(discountSummary?.onPaid?.total || 0)} baseFontSize={17} minimumFontSize={13} style={[s.cardValue, { color: colors.danger }]} />
                 <Text style={s.tapHint}>Tap for breakdown ›</Text>
               </TouchableOpacity>
               <TouchableOpacity accessibilityRole="button" accessibilityLabel="Taxes. View breakdown" activeOpacity={0.8} onPress={openTaxDetail} style={[s.gridCard, { borderTopColor: colors.info, borderTopWidth: 2 }]}>
                 <View style={s.metricArtwork}><MetricIllustration icon="file-text" /></View>
                 <Text style={s.cardLabel}>Taxes (GST)</Text>
-                <Text style={s.cardValue}>
-                  {format(taxesSummary?.onPaid?.tax || 0)}
-                </Text>
+                <AdaptiveValueText value={format(taxesSummary?.onPaid?.tax || 0)} baseFontSize={17} minimumFontSize={13} style={s.cardValue} />
                 <Text style={s.tapHint}>Tap for breakdown ›</Text>
               </TouchableOpacity>
             </View>
@@ -454,17 +451,13 @@ export function SalesDashboardScreen() {
               <TouchableOpacity accessibilityRole="button" accessibilityLabel="Service charge. View breakdown" activeOpacity={0.8} onPress={openChargesDetail} style={[s.gridCard, { borderTopColor: colors.tint.violet.fg, borderTopWidth: 2 }]}>
                 <View style={s.metricArtwork}><MetricIllustration icon="briefcase" /></View>
                 <Text style={s.cardLabel}>Service Charge</Text>
-                <Text style={s.cardValue}>
-                  {format(taxesSummary?.onPaid?.serviceCharge || 0)}
-                </Text>
+                <AdaptiveValueText value={format(taxesSummary?.onPaid?.serviceCharge || 0)} baseFontSize={17} minimumFontSize={13} style={s.cardValue} />
                 <Text style={s.tapHint}>Tap for breakdown ›</Text>
               </TouchableOpacity>
               <TouchableOpacity accessibilityRole="button" accessibilityLabel="Tips. View breakdown" activeOpacity={0.8} onPress={openTipsDetail} style={[s.gridCard, { borderTopColor: colors.warning, borderTopWidth: 2 }]}>
                 <View style={s.metricArtwork}><MetricIllustration icon="smile" /></View>
                 <Text style={s.cardLabel}>Tips</Text>
-                <Text style={s.cardValue}>
-                  {format(taxesSummary?.onPaid?.tip || 0)}
-                </Text>
+                <AdaptiveValueText value={format(taxesSummary?.onPaid?.tip || 0)} baseFontSize={17} minimumFontSize={13} style={s.cardValue} />
                 <Text style={s.tapHint}>Tap for breakdown ›</Text>
               </TouchableOpacity>
             </View>
@@ -484,16 +477,12 @@ export function SalesDashboardScreen() {
                 <View style={[s.gridCard, { borderTopColor: colors.danger, borderTopWidth: 2 }]}>
                   <View style={s.metricArtwork}><MetricIllustration icon="trending-down" /></View>
                   <Text style={s.cardLabel}>Dues Given</Text>
-                  <Text style={[s.cardValue, { color: colors.danger }]}>
-                    {format(duesSummary?.duesGiven || 0)}
-                  </Text>
+                  <AdaptiveValueText value={format(duesSummary?.duesGiven || 0)} baseFontSize={17} minimumFontSize={13} style={[s.cardValue, { color: colors.danger }]} />
                 </View>
                 <View style={[s.gridCard, { borderTopColor: colors.danger, borderTopWidth: 2 }]}>
                   <View style={s.metricArtwork}><MetricIllustration icon="alert-circle" /></View>
                   <Text style={s.cardLabel}>Net dues change</Text>
-                  <Text style={[s.cardValue, { color: colors.danger }]}>
-                    {format(duesSummary?.duesOutstanding || 0)}
-                  </Text>
+                  <AdaptiveValueText value={format(duesSummary?.duesOutstanding || 0)} baseFontSize={17} minimumFontSize={13} style={[s.cardValue, { color: colors.danger }]} />
                 </View>
               </View>
 
@@ -508,9 +497,7 @@ export function SalesDashboardScreen() {
                 <View style={[s.gridCard, { borderTopColor: colors.success, borderTopWidth: 2 }]}>
                   <View style={s.metricArtwork}><MetricIllustration icon="dollar-sign" /></View>
                   <Text style={s.cardLabel}>Get Back</Text>
-                  <Text style={[s.cardValue, { color: colors.success }]}>
-                    {format(duesSummary?.duesGetBack || 0)}
-                  </Text>
+                  <AdaptiveValueText value={format(duesSummary?.duesGetBack || 0)} baseFontSize={17} minimumFontSize={13} style={[s.cardValue, { color: colors.success }]} />
                 </View>
               </View>
             </MotiView>
@@ -530,9 +517,7 @@ export function SalesDashboardScreen() {
             >
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <Text style={[s.sectionLabel, { marginTop: 0, marginBottom: 0 }]}>Active Tables ({liveTables.length})</Text>
-                <Text style={{ fontFamily: fonts.bold, fontSize: 13, fontWeight: '800', color: colors.warning }}>
-                  Total: {format(liveRunning?.totalActiveTableValue || 0)}
-                </Text>
+                <AdaptiveValueText value={`Total: ${format(liveRunning?.totalActiveTableValue || 0)}`} baseFontSize={13} minimumFontSize={10} style={{ maxWidth: '52%', fontFamily: fonts.bold, fontWeight: '800', color: colors.warning, textAlign: 'right' }} />
               </View>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
                 {liveTables.map((t, i) => (
@@ -555,9 +540,7 @@ export function SalesDashboardScreen() {
                     <Text style={{ fontFamily: fonts.bold, fontSize: 11, color: colors.tint.amber.fg, fontWeight: '800', textTransform: 'uppercase', marginBottom: 4 }}>
                       {t.tableName}
                     </Text>
-                    <Text style={{ fontFamily: fonts.bold, fontSize: 15, fontWeight: '900', color: colors.tint.amber.fg }}>
-                      {format(t.tableCurrentAmount)}
-                    </Text>
+                    <AdaptiveValueText value={format(t.tableCurrentAmount)} baseFontSize={15} minimumFontSize={12} style={{ maxWidth: '100%', fontFamily: fonts.bold, fontWeight: '900', color: colors.tint.amber.fg }} />
                     <Text style={{ fontFamily: fonts.medium, fontSize: 11, color: colors.text.muted, marginTop: 4 }}>
                       View KOTs ›
                     </Text>

@@ -2,6 +2,7 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import { AppCard } from '@/components/primitives/AppCard';
 import { colors, fonts, radii } from '@/theme';
+import { AdaptiveValueText } from '@/components/shared/AdaptiveValueText';
 
 type Props = {
   name: string;
@@ -26,7 +27,12 @@ export function BillingAccountRow({ name, phone, detail, detailLabel, detailColo
       </View>
       <View style={{ alignItems: 'flex-end', maxWidth: '35%' }}>
         <Text style={{ fontSize: 11, fontFamily: fonts.semibold, color: colors.text.muted }}>{detailLabel}</Text>
-        <Text numberOfLines={1} style={{ fontSize: 15, fontFamily: fonts.extrabold, color: detailColor || colors.text.base, marginTop: 2 }}>{detail}</Text>
+        <AdaptiveValueText
+          value={detail}
+          baseFontSize={15}
+          minimumFontSize={12}
+          style={{ maxWidth: '100%', fontFamily: fonts.extrabold, color: detailColor || colors.text.base, marginTop: 2 }}
+        />
         {badge ? <Text style={{ fontSize: 10, fontFamily: fonts.bold, color: badgeActive ? colors.success : colors.text.muted, marginTop: 4 }}>{badge}</Text> : null}
       </View>
     </AppCard>

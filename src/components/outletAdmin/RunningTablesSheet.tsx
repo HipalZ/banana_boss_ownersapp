@@ -23,6 +23,7 @@ import {
   RUNNING_KOT_STATUSES,
 } from '@/queries/bills';
 import { useCurrency } from '@/hooks/useCurrency';
+import { AdaptiveValueText } from '@/components/shared/AdaptiveValueText';
 import type { TableKot } from '@/api/services/bills/bills.types';
 import { colors, fonts, radii } from '@/theme';
 
@@ -270,9 +271,7 @@ function TablesList({
                 </Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={{ fontFamily: fonts.bold, fontSize: 15, color: colors.text.base }}>
-                  {format(t.amount)}
-                </Text>
+                <AdaptiveValueText value={format(t.amount)} baseFontSize={15} minimumFontSize={12} style={{ maxWidth: '45%', fontFamily: fonts.bold, color: colors.text.base, textAlign: 'right' }} />
                 <Icon name="chevron-right" size={18} color={colors.text.faint} />
               </View>
             </TouchableOpacity>
@@ -442,9 +441,7 @@ function KotCard({ kot }: { kot: TableKot }) {
                   {item.itemName}
                 </Text>
               </View>
-              <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.text.secondary }}>
-                {format((item.itemPrice ?? 0) * (item.quantity ?? 1))}
-              </Text>
+              <AdaptiveValueText value={format((item.itemPrice ?? 0) * (item.quantity ?? 1))} baseFontSize={13} minimumFontSize={10} style={{ maxWidth: '38%', fontFamily: fonts.semibold, color: colors.text.secondary, textAlign: 'right' }} />
             </View>
           ))
         )}

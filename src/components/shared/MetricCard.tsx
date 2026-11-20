@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { colors, fonts, radii, shadows } from '@/theme';
 import { MetricIllustration } from './MetricIllustration';
+import { AdaptiveValueText } from './AdaptiveValueText';
 
 interface BreakdownItem {
   label: string;
@@ -49,7 +50,12 @@ export const MetricCard = React.memo(function MetricCard({
         </Text>
         <MetricIllustration icon={icon} />
       </View>
-      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.78} style={{ fontFamily: fonts.extrabold, fontSize: compact ? 21 : 22, color: colors.text.base }}>{value}</Text>
+      <AdaptiveValueText
+        value={value}
+        baseFontSize={compact ? 21 : 22}
+        minimumFontSize={16}
+        style={{ width: '100%', fontFamily: fonts.extrabold, color: colors.text.base }}
+      />
       {subtitle && <Text style={{ fontFamily: fonts.medium, fontSize: 11, color: colors.text.muted, marginTop: 6 }}>{subtitle}</Text>}
       {onPress && <Icon name="arrow-up-right" size={14} color={colors.text.muted} style={{ position: 'absolute', right: 11, bottom: 10 }} />}
     </>

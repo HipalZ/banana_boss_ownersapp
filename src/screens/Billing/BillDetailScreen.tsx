@@ -8,7 +8,7 @@ import { useBillByIdQuery, useBillJourneyQuery } from '@/queries/bills';
 import { useCurrency } from '@/hooks/useCurrency';
 import { ScreenWrapper, TopBar } from '@/components/layout';
 import { AppCard, AppDivider, AppBadge } from '@/components/primitives';
-import { LoadingSkeleton, ErrorState } from '@/components/shared';
+import { AdaptiveValueText, LoadingSkeleton, ErrorState } from '@/components/shared';
 import { formatDateTime } from '@/utils/date';
 import { colors, fonts } from '@/theme';
 
@@ -84,7 +84,7 @@ export function BillDetailScreen() {
               <AppCard key={item._id} style={{ marginBottom: 8 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                   <Text style={{ fontSize: 14, fontFamily: fonts.bold, color: colors.text.base, flex: 1 }}>{item.itemName}</Text>
-                  <Text style={{ fontSize: 14, fontFamily: fonts.bold, color: colors.text.base }}>{format(item.total)}</Text>
+                  <AdaptiveValueText value={format(item.total)} baseFontSize={14} minimumFontSize={11} style={{ maxWidth: '45%', fontFamily: fonts.bold, color: colors.text.base, textAlign: 'right' }} />
                 </View>
                 <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: colors.text.faint, marginTop: 2 }}>
                   {item.quantity} x {format(item.price)}
@@ -96,24 +96,24 @@ export function BillDetailScreen() {
           <AppCard style={{ marginTop: 16 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
               <Text style={lbl}>Subtotal</Text>
-              <Text style={sumVal}>{format(data.subtotal)}</Text>
+              <AdaptiveValueText value={format(data.subtotal)} baseFontSize={14} minimumFontSize={11} style={sumVal} />
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
               <Text style={lbl}>Discount</Text>
-              <Text style={[sumVal, { color: colors.danger }]}>{format(data.discount)}</Text>
+              <AdaptiveValueText value={format(data.discount)} baseFontSize={14} minimumFontSize={11} style={[sumVal, { color: colors.danger }]} />
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
               <Text style={lbl}>Tax</Text>
-              <Text style={sumVal}>{format(data.tax)}</Text>
+              <AdaptiveValueText value={format(data.tax)} baseFontSize={14} minimumFontSize={11} style={sumVal} />
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
               <Text style={lbl}>Service Charge</Text>
-              <Text style={sumVal}>{format(data.serviceCharge)}</Text>
+              <AdaptiveValueText value={format(data.serviceCharge)} baseFontSize={14} minimumFontSize={11} style={sumVal} />
             </View>
             <AppDivider />
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <Text style={{ fontSize: 18, fontFamily: fonts.extrabold, color: colors.text.base }}>Grand Total</Text>
-              <Text style={{ fontSize: 18, fontFamily: fonts.extrabold, color: colors.text.base }}>{format(data.total)}</Text>
+              <AdaptiveValueText value={format(data.total)} baseFontSize={18} minimumFontSize={14} style={{ maxWidth: '55%', fontFamily: fonts.extrabold, color: colors.text.base, textAlign: 'right' }} />
             </View>
           </AppCard>
         </View>

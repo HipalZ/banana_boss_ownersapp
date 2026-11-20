@@ -8,7 +8,7 @@ import { billsApi } from "@/api/services/bills/bills.api";
 import { queryKeys } from "@/queries/queryKeys";
 import { useCurrency } from "@/hooks/useCurrency";
 import { ScreenWrapper } from "@/components/layout";
-import { MetricCard, DateRangePicker } from "@/components/shared";
+import { AdaptiveValueText, MetricCard, DateRangePicker } from "@/components/shared";
 import { RunningTablesSheet } from "@/components/outletAdmin/RunningTablesSheet";
 import { getTodayRange } from "@/utils/date";
 import { colors, fonts, radii, shadows } from "@/theme";
@@ -247,16 +247,12 @@ export function AllOutletsScreen() {
                     style={{ alignSelf: "flex-start", marginTop: 6 }}
                   />
                 ) : (
-                  <Text
-                    style={{
-                      fontFamily: fonts.bold,
-                      fontSize: 20,
-                      color: colors.text.base,
-                      marginTop: 4,
-                    }}
-                  >
-                    {format(overall?.totalSale ?? 0)}
-                  </Text>
+                  <AdaptiveValueText
+                    value={format(overall?.totalSale ?? 0)}
+                    baseFontSize={20}
+                    minimumFontSize={15}
+                    style={{ maxWidth: '90%', fontFamily: fonts.bold, color: colors.text.base, marginTop: 4 }}
+                  />
                 )}
                 <Text
                   style={{

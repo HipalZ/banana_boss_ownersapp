@@ -1,4 +1,5 @@
 export { MetricCard } from './MetricCard';
+export { AdaptiveValueText, getAdaptiveValueFontSize } from './AdaptiveValueText';
 export { DateRangePicker } from './DateRangePicker';
 export { StatusBadge } from './StatusBadge';
 export { EmptyState } from './EmptyState';

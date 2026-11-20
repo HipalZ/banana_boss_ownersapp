@@ -7,6 +7,7 @@ import { useAppStore } from '@/stores/appStore';
 import { useDiscountReport } from '@/queries/reports';
 import { ScreenWrapper, TopBar } from '@/components/layout';
 import { DateRangePicker, ReportTable, ReportSummary, PaginationBar } from '@/components/shared';
+import { formatINR } from '@/utils/currency';
 
 export function DiscountReportScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<ReportsStackParamList>>();
@@ -23,7 +24,7 @@ export function DiscountReportScreen() {
     'Payment', 'Reason', 'Applied By', 'Applied At',
   ], []);
 
-  const currency = (value: unknown) => `₹${Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const currency = (value: unknown) => formatINR(value);
   const dateTime = (value: unknown) => value ? new Date(Number(value)).toLocaleString('en-IN') : '—';
 
   const rows = useMemo(

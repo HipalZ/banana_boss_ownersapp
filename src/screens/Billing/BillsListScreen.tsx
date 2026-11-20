@@ -8,7 +8,7 @@ import { useAppStore } from '@/stores/appStore';
 import { useBillsListQuery } from '@/queries/bills';
 import { useCurrency } from '@/hooks/useCurrency';
 import { ScreenWrapper, TopBar } from '@/components/layout';
-import { DateRangePicker, StatusBadge, SearchBar, LoadingSkeleton, EmptyState, ErrorState } from '@/components/shared';
+import { AdaptiveValueText, DateRangePicker, StatusBadge, SearchBar, LoadingSkeleton, EmptyState, ErrorState } from '@/components/shared';
 import { formatDateTime } from '@/utils/date';
 import { AppCard } from '@/components/primitives/AppCard';
 import Icon from 'react-native-vector-icons/Feather';
@@ -180,10 +180,8 @@ export function BillsListScreen() {
                 {formatDateTime(item.createdAt)}
               </Text>
             </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={{ fontSize: 16, fontFamily: fonts.extrabold, color: isDues ? colors.text.muted : colors.text.base }}>
-                {format(item.total)}
-              </Text>
+            <View style={{ alignItems: 'flex-end', maxWidth: '42%' }}>
+              <AdaptiveValueText value={format(item.total)} baseFontSize={16} minimumFontSize={12} style={{ maxWidth: '100%', fontFamily: fonts.extrabold, color: isDues ? colors.text.muted : colors.text.base, textAlign: 'right' }} />
               {isDues && (
                 <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: colors.text.muted, marginTop: 2 }}>
                   Excluded from Revenue
@@ -259,21 +257,17 @@ export function BillsListScreen() {
       {!isLoading && !isError && filtered.length > 0 && (
         <AppCard style={{ marginBottom: 16, padding: 16 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <View>
+            <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={{ fontFamily: fonts.extrabold, fontSize: 11, color: colors.text.faint, letterSpacing: 0.5, textTransform: 'uppercase' }}>
                 Visible revenue
               </Text>
-              <Text style={{ fontFamily: fonts.extrabold, fontSize: 20, color: colors.text.base, marginTop: 4 }}>
-                {format(metrics.salesTotal)}
-              </Text>
+              <AdaptiveValueText value={format(metrics.salesTotal)} baseFontSize={20} minimumFontSize={15} style={{ maxWidth: '100%', fontFamily: fonts.extrabold, color: colors.text.base, marginTop: 4 }} />
             </View>
-            <View style={{ alignItems: 'flex-end' }}>
+            <View style={{ flex: 1, minWidth: 0, alignItems: 'flex-end' }}>
               <Text style={{ fontFamily: fonts.extrabold, fontSize: 11, color: colors.text.faint, letterSpacing: 0.5, textTransform: 'uppercase' }}>
                 Bills / dues shown
               </Text>
-              <Text style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.text.secondary, marginTop: 4 }}>
-                {metrics.regularBillsCount} bills | Dues {format(metrics.duesTotal)}
-              </Text>
+              <AdaptiveValueText value={`${metrics.regularBillsCount} bills | Dues ${format(metrics.duesTotal)}`} baseFontSize={14} minimumFontSize={10} style={{ maxWidth: '100%', fontFamily: fonts.semibold, color: colors.text.secondary, marginTop: 4, textAlign: 'right' }} />
             </View>
           </View>
         </AppCard>
