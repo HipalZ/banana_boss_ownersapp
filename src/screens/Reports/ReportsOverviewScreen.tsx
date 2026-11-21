@@ -1,3 +1,4 @@
+import { ownerArtwork } from '@/theme/ownerArtwork';
 import React from 'react';
 import { Image, Pressable, View, Text } from 'react-native';
 import { AnimatePresence, MotiView } from 'moti';
@@ -20,7 +21,7 @@ import { aggregateNetSalesTotals } from './netSalesTotals';
 const reportGroups = [
   {
     title: 'Sales & Revenue',
-    image: require('../../../assets/dashboard-3d/sales.png'),
+    image: ownerArtwork.sales,
     items: [
       { title: 'Outstanding Dues', screen: 'OutstandingDues' as const },
       { title: 'Discounts Issued', screen: 'DiscountReport' as const },
@@ -29,7 +30,7 @@ const reportGroups = [
   },
   {
     title: 'Menu & Categories',
-    image: require('../../../assets/dashboard-3d/menu.png'),
+    image: ownerArtwork.menu,
     items: [
       { title: 'Item Sales', screen: 'ItemSalesReport' as const },
       { title: 'Parent Category', screen: 'ParentCategoryReport' as const },
@@ -40,7 +41,7 @@ const reportGroups = [
   },
   {
     title: 'Audits & Operations',
-    image: require('../../../assets/dashboard-3d/operations.png'),
+    image: ownerArtwork.operations,
     items: [
       { title: 'Area Report', screen: 'AreaReport' as const },
       { title: 'Area-Item Sales', screen: 'AreaItemReport' as const },
@@ -53,9 +54,9 @@ const reportGroups = [
 ];
 
 const quickReports = [
-  { title: 'Bill-wise Sales', image: require('../../../assets/dashboard-3d/billing.png'), screen: 'BillWiseReport' as const },
-  { title: 'Item Variant Sales', image: require('../../../assets/dashboard-3d/menu.png'), screen: 'ItemVariantReport' as const },
-  { title: 'Category Sales', image: require('../../../assets/dashboard-3d/operations.png'), screen: 'CategorySalesReport' as const },
+  { title: 'Bill-wise Sales', image: ownerArtwork.billing, screen: 'BillWiseReport' as const },
+  { title: 'Item Variant Sales', image: ownerArtwork.menu, screen: 'ItemVariantReport' as const },
+  { title: 'Category Sales', image: ownerArtwork.operations, screen: 'CategorySalesReport' as const },
 ];
 
 export function ReportsOverviewScreen() {
@@ -86,7 +87,7 @@ export function ReportsOverviewScreen() {
           title="Total sales"
           value={hasCurrentData ? formatINR(totals.totalSales) : undefined}
           detail={isError ? 'Summary unavailable · open report' : 'Tax, charges & round-off'}
-          image={require('../../../assets/dashboard-3d/sales.png')}
+          image={ownerArtwork.sales}
           loading={isLoading || isPlaceholderData}
           onPress={() => navigation.navigate('NetSalesSummary')}
         />

@@ -1,11 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { AppTabsParamList } from '@/types/navigation';
-import { ReportsStack } from './ReportsStack';
-import { BillingStack } from './BillingStack';
-import { SettingsStack } from './SettingsStack';
-import { WhatsappStack } from './WhatsappStack';
-import { CustomerFeedbackScreen } from '@/screens/Feedback/CustomerFeedbackScreen';
 import { OwnerTabBar } from './OwnerTabBar';
 
 const Tab = createBottomTabNavigator<AppTabsParamList>();
@@ -17,11 +12,11 @@ export function AppTabs() {
       tabBar={(props) => <OwnerTabBar {...props} />}
       screenOptions={{ headerShown: false }}
     >
-      <Tab.Screen name="ReportsTab"  component={ReportsStack}  options={{ tabBarLabel: 'Reports' }} />
-      <Tab.Screen name="BillingTab"  component={BillingStack}  options={{ tabBarLabel: 'Billing' }} />
-      <Tab.Screen name="WhatsappTab" component={WhatsappStack} options={{ tabBarLabel: 'WhatsApp' }} />
-      <Tab.Screen name="FeedbackTab" component={CustomerFeedbackScreen} options={{ tabBarLabel: 'Feedback' }} />
-      <Tab.Screen name="SettingsTab" component={SettingsStack} options={{ tabBarLabel: 'Account' }} />
+      <Tab.Screen name="ReportsTab"  getComponent={() => require('./ReportsStack').ReportsStack}  options={{ tabBarLabel: 'Reports' }} />
+      <Tab.Screen name="BillingTab"  getComponent={() => require('./BillingStack').BillingStack}  options={{ tabBarLabel: 'Billing' }} />
+      <Tab.Screen name="WhatsappTab" getComponent={() => require('./WhatsappStack').WhatsappStack} options={{ tabBarLabel: 'WhatsApp' }} />
+      <Tab.Screen name="FeedbackTab" getComponent={() => require('@/screens/Feedback/CustomerFeedbackScreen').CustomerFeedbackScreen} options={{ tabBarLabel: 'Feedback' }} />
+      <Tab.Screen name="SettingsTab" getComponent={() => require('./SettingsStack').SettingsStack} options={{ tabBarLabel: 'Account' }} />
     </Tab.Navigator>
   );
 }

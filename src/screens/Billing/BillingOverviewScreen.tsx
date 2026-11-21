@@ -1,3 +1,4 @@
+import { ownerArtwork } from '@/theme/ownerArtwork';
 import React from 'react';
 import { Image, View, Text } from 'react-native';
 import { MotiView } from 'moti';
@@ -21,11 +22,11 @@ import { colors, fonts } from '@/theme';
 type Nav = NativeStackNavigationProp<BillingStackParamList>;
 
 const navItems = [
-  { title: 'Bills', subtitle: 'All bills & invoices', image: require('../../../assets/dashboard-3d/billing.png'), screen: 'BillsList' as const },
-  { title: 'Running tables', subtitle: 'Live tables & KOTs', image: require('../../../assets/dashboard-3d/running-tables.png'), screen: 'RunningTables' as const },
-  { title: 'Payment modes', subtitle: 'Manage payments', image: require('../../../assets/dashboard-3d/sales.png'), screen: 'PaymentModes' as const },
-  { title: 'Dues ledger', subtitle: 'Outstanding amounts', image: require('../../../assets/dashboard-3d/operations.png'), screen: 'Dues' as const },
-  { title: 'NPC accounts', subtitle: 'Non-paying registry', image: require('../../../assets/dashboard-3d/accounts.png'), screen: 'Npc' as const },
+  { title: 'Bills', subtitle: 'All bills & invoices', image: ownerArtwork.billing, screen: 'BillsList' as const },
+  { title: 'Running tables', subtitle: 'Live tables & KOTs', image: ownerArtwork.runningTables, screen: 'RunningTables' as const },
+  { title: 'Payment modes', subtitle: 'Manage payments', image: ownerArtwork.sales, screen: 'PaymentModes' as const },
+  { title: 'Dues ledger', subtitle: 'Outstanding amounts', image: ownerArtwork.operations, screen: 'Dues' as const },
+  { title: 'NPC accounts', subtitle: 'Non-paying registry', image: ownerArtwork.accounts, screen: 'Npc' as const },
 ];
 
 export function BillingOverviewScreen() {
@@ -57,7 +58,7 @@ export function BillingOverviewScreen() {
           title="Net sales"
           value={dashboard && !isError ? formatINR(totals?.netAfterDiscountAndCharges ?? 0) : undefined}
           detail={isError ? 'Summary unavailable · open dashboard' : 'Open sales dashboard'}
-          image={require('../../../assets/dashboard-3d/sales.png')}
+          image={ownerArtwork.sales}
           loading={isLoading}
           onPress={() => navigation.navigate('SalesDashboard')}
         />

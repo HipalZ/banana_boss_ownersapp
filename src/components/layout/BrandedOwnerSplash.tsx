@@ -1,3 +1,4 @@
+import { ownerArtwork } from '@/theme/ownerArtwork';
 import React, { useEffect, useRef, useState } from 'react';
 import { Image, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -70,7 +71,7 @@ export function BrandedOwnerSplash({ outletName, logoUrl, onComplete }: BrandedO
           {outletName}
         </Text>
       </Animated.View>
-      <Image source={require('../../../assets/splash-restaurant-pattern.png')} resizeMode="stretch" style={{ position: 'absolute', left: 0, right: 0, bottom: 62, width: '100%', height: 168, opacity: 0.32 }} />
+      <Image source={ownerArtwork.splashRestaurantPattern} resizeMode="stretch" style={{ position: 'absolute', left: 0, right: 0, bottom: 62, width: '100%', height: 168, opacity: 0.32 }} />
       <View style={{ alignItems: 'center', gap: 4, paddingBottom: 20 }}>
         <Text style={{ color: '#77736D', fontFamily: fonts.semibold, fontSize: 9, letterSpacing: 1.8 }}>POWERED BY</Text>
         <Text style={{ color: '#292B2A', fontFamily: fonts.bold, fontSize: 17 }}>Banana Boss</Text>

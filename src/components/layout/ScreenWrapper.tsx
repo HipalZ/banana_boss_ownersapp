@@ -1,3 +1,4 @@
+import { ownerArtwork } from '@/theme/ownerArtwork';
 import React from 'react';
 import {
   View,
@@ -43,7 +44,7 @@ export const ScreenWrapper = React.memo(function ScreenWrapper({
   const canvasPattern = showCanvasPattern ? (
     <Image
       source={themeMode === 'dark'
-        ? require('../../../assets/owner-dark-dots.png')
+        ? ownerArtwork.ownerDarkDots
         : require('../../../assets/owner-light-dots.png')}
       resizeMode="stretch"
       style={{ position: 'absolute', width: '100%', height: '100%', opacity: themeMode === 'dark' ? 0.14 : 0.7 }}

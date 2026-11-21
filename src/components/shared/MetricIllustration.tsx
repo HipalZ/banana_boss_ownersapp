@@ -1,3 +1,4 @@
+import { ownerArtwork } from '@/theme/ownerArtwork';
 import React from 'react';
 import { Image, View } from 'react-native';
 
@@ -34,8 +35,8 @@ const artwork: Record<string, Cell> = {
 };
 
 const sources = {
-  financial: require('../../../assets/dashboard-3d/report-metrics-atlas.png'),
-  operations: require('../../../assets/dashboard-3d/report-operations-atlas.png'),
+  financial: ownerArtwork.reportMetricsAtlas,
+  operations: ownerArtwork.reportOperationsAtlas,
 };
 
 export function MetricIllustration({ icon }: { icon: string }) {

@@ -19,6 +19,26 @@
     <!-- Service Worker Registration -->
     <script>
       if ('serviceWorker' in navigator) {
+        if (!navigator.serviceWorker.controller && 'PerformanceObserver' in window) {
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            const worker = navigator.serviceWorker.controller;
+            if (!worker) return;
+            const claimedAt = performance.now();
+            const observer = new PerformanceObserver(list => {
+              const urls = list.getEntries()
+                .filter(entry => entry.startTime <= claimedAt)
+                .map(entry => entry.name)
+                .filter(name => {
+                  const url = new URL(name);
+                  return url.origin === location.origin && /^\/(assets|_expo\/static)\//.test(url.pathname);
+                });
+              if (urls.length) worker.postMessage({ type: 'warm-assets', urls });
+            });
+            observer.observe({ type: 'resource', buffered: true });
+            // Allow pre-control font and image requests to finish on slow connections.
+            setTimeout(() => observer.disconnect(), 60000);
+          }, { once: true });
+        }
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js')
             .then(reg => console.log('Expo PWA Service Worker registered successfully:', reg.scope))

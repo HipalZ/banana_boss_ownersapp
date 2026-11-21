@@ -1,3 +1,4 @@
+import { ownerArtwork } from '@/theme/ownerArtwork';
 import React from 'react';
 import {
   ActivityIndicator,
@@ -143,7 +144,7 @@ export function RunningTablesScreen() {
             }}
           >
             <Image
-              source={require('../../../assets/dashboard-3d/running-tables.png')}
+              source={ownerArtwork.runningTables}
               resizeMode="contain"
               style={{ width: 84, height: 84, opacity: 0.82 }}
             />
